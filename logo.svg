@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 130" width="120" height="130" role="img" aria-label="Brasão CRAS">
+  <defs>
+    <linearGradient id="cras_g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2e86c1"/>
+      <stop offset="1" stop-color="#1a5276"/>
+    </linearGradient>
+    <linearGradient id="cras_ribbon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5b041"/>
+      <stop offset="1" stop-color="#e67e22"/>
+    </linearGradient>
+  </defs>
+  <!-- Escudo -->
+  <path d="M60 4 L108 20 V64 C108 94 86 116 60 126 C34 116 12 94 12 64 V20 Z"
+        fill="url(#cras_g)" stroke="#ffffff" stroke-width="3"/>
+  <!-- Borda interna -->
+  <path d="M60 14 L99 27 V63 C99 88 81 106 60 115 C39 106 21 88 21 63 V27 Z"
+        fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.55"/>
+  <!-- Mãos que acolhem -->
+  <path d="M42 74 c-4 -6 -12 -6 -14 2 c6 2 8 8 14 9 z" fill="#ffffff" opacity="0.9"/>
+  <path d="M78 74 c4 -6 12 -6 14 2 c-6 2 -8 8 -14 9 z" fill="#ffffff" opacity="0.9"/>
+  <circle cx="60" cy="58" r="12" fill="#f5b041"/>
+  <path d="M60 48 l3.1 6.3 6.9 1 -5 4.9 1.2 6.9 -6.2 -3.3 -6.2 3.3 1.2 -6.9 -5 -4.9 6.9 -1 z" fill="#ffffff"/>
+  <!-- Faixa -->
+  <rect x="22" y="86" width="76" height="20" rx="4" fill="url(#cras_ribbon)"/>
+  <text x="60" y="100" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="14" font-weight="700" fill="#ffffff" letter-spacing="2">CRAS</text>
+</svg>
