@@ -4,174 +4,335 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon-cras.png?v=20261009" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#6F88B0" />
+    <meta name="theme-color" content="#f1f5f7" />
     <meta name="description" content="Sistema de Agendamento - CRAS Delfinópolis" />
     <link rel="manifest" href="/manifest.json" />
-    <!-- Pré-carrega a abertura para aparecer mais rápido -->
-    <link rel="preload" as="image" href="/splash-poster-v6.jpg?v=6" />
-    <link rel="preload" as="fetch" href="/animacao-cras-v6.mp4?v=6" type="video/mp4" crossorigin="anonymous" />
+    <!-- Pré-carrega o logotipo da abertura para aparecer imediatamente -->
+    <link rel="preload" as="image" href="/splash-logo-v7.png?v=7" />
     <link rel="apple-touch-icon" href="/favicon-cras.png?v=20261009" />
     <title>CRAS Delfinópolis</title>
     <style>
-      /* Reset para o vídeo de abertura ocupar a tela inteira, sem margens */
       html, body { margin: 0; padding: 0; }
-      /* ===== Tela de abertura (splash) animada ===== */
+
+      /* ===== Tela de abertura (carregamento real) ===== */
       #app-splash {
         position: fixed;
         inset: 0;
-        width: 100vw;
-        height: 100vh;
-        margin: 0;
-        padding: 0;
         z-index: 9999;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 22px;
-        background: #6F88B0;
+        gap: 26px;
+        padding: 24px;
+        box-sizing: border-box;
+        background: #f1f5f7;
         overflow: hidden;
-        transition: opacity .7s ease, visibility .7s ease, transform .7s cubic-bezier(.22,.61,.36,1);
-        will-change: opacity, transform;
+        transition: opacity .7s ease, visibility .7s ease;
+        will-change: opacity;
       }
-      #app-splash.hide {
-        opacity: 0;
-        visibility: hidden;
-        transform: scale(1.045);
-      }
-      /* Conteúdo do sistema (login) surge suavemente, de forma GARANTIDA.
-         Usa animação que termina sozinha (fill-mode both), SEM depender de
-         nenhum código JS avisar — assim o login nunca fica invisível/travado. */
-      #root {
-        animation: appContentIn .65s cubic-bezier(.22,.61,.36,1) .1s both;
-      }
+      #app-splash.hide { opacity: 0; visibility: hidden; }
+
+      /* Conteúdo do sistema surge suavemente e de forma GARANTIDA (sem depender
+         de callback de JS) — assim o login nunca fica invisível/travado. */
+      #root { animation: appContentIn .6s cubic-bezier(.22,.61,.36,1) .05s both; }
       @keyframes appContentIn {
-        from { opacity: 0; transform: translateY(10px) scale(.994); }
+        from { opacity: 0; transform: translateY(8px); }
         to   { opacity: 1; transform: none; }
       }
-      /* Vídeo de abertura centralizado na tela (sem ficar puxado pra baixo).
-         Mantém a proporção do vídeo e fica no meio, com o fundo azul em volta. */
-      #app-splash .splash-video {
+
+      /* ---- Logotipo (imagem original preservada; animação em camada separada) ---- */
+      .splash-logo-wrap {
         position: relative;
-        width: 100vw;
-        max-width: 100%;
-        height: auto;
-        max-height: 100vh;
-        -o-object-fit: contain;
-           object-fit: contain;
-        background: #6F88B0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-      #app-splash .splash-logo {
+      .splash-logo-wrap::before {
+        content: '';
+        position: absolute;
+        width: 78%;
+        height: 78%;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(79,163,242,.30), rgba(79,163,242,0) 70%);
+        filter: blur(20px);
+        opacity: .0;
+        animation: logoGlow 3.4s ease-in-out .6s infinite;
+        pointer-events: none;
+      }
+      .splash-logo {
+        position: relative;
         width: 300px;
-        max-width: 76vw;
+        max-width: 72vw;
         height: auto;
-        will-change: opacity, transform, filter;
-        animation: splashLogoIn 1.2s cubic-bezier(.22,.61,.36,1) both,
-                   splashFloat 3.6s ease-in-out 1.3s infinite;
+        display: block;
+        will-change: opacity, transform;
+        animation: logoIn 1s cubic-bezier(.22,.61,.36,1) both,
+                   logoFloat 4.6s ease-in-out 1.1s infinite;
       }
-      #app-splash .splash-title {
+      @keyframes logoIn {
+        0%   { opacity: 0; transform: scale(.96) translateY(10px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+      }
+      @keyframes logoFloat {
+        0%,100% { transform: translateY(0); }
+        50%     { transform: translateY(-5px); }
+      }
+      @keyframes logoGlow {
+        0%,100% { opacity: .18; }
+        50%     { opacity: .55; }
+      }
+
+      /* ---- Barra de progresso REAL ---- */
+      .splash-progress {
+        width: min(380px, 80vw);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        opacity: 0;
+        animation: fadeUp .6s ease .35s forwards;
+      }
+      .splash-track {
+        position: relative;
+        flex: 1;
+        height: 8px;
+        border-radius: 999px;
+        background: #dfe7ee;
+        overflow: hidden;
+      }
+      .splash-fill {
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 0%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #2f6fd0, #4fa3f2);
+        transition: width .45s cubic-bezier(.22,.61,.36,1);
+      }
+      /* Brilho que desliza sobre a parte preenchida da barra */
+      .splash-fill::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%);
+        transform: translateX(-100%);
+        animation: barShine 1.8s ease-in-out infinite;
+      }
+      .splash-pct {
+        min-width: 44px;
+        text-align: right;
+        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        color: #2f6fd0;
+        font-variant-numeric: tabular-nums;
+      }
+      /* Modo indeterminado: barra desliza sem porcentagem (quando não dá para
+         calcular um valor real confiável). */
+      .splash-progress.indeterminate .splash-fill {
+        width: 38% !important;
+        transition: none;
+        animation: barIndeterminate 1.3s ease-in-out infinite;
+      }
+      .splash-progress.indeterminate .splash-fill::after { animation: none; }
+
+      .splash-status {
+        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: #3f6ea8;
+        text-align: center;
+        min-height: 18px;
+        opacity: 0;
+        animation: fadeUp .6s ease .45s forwards;
+      }
+
+      /* ---- Pontos de carregamento ---- */
+      .splash-dots {
+        display: flex;
+        gap: 9px;
+        opacity: 0;
+        animation: fadeUp .6s ease .55s forwards;
+      }
+      .splash-dots i {
+        width: 9px; height: 9px;
+        border-radius: 50%;
+        background: #c9d6e2;
+        display: inline-block;
+        animation: dotPulse 1.3s ease-in-out infinite;
+      }
+      .splash-dots i:nth-child(1) { animation-delay: 0s; }
+      .splash-dots i:nth-child(2) { animation-delay: .12s; }
+      .splash-dots i:nth-child(3) { animation-delay: .24s; }
+      .splash-dots i:nth-child(4) { animation-delay: .36s; }
+      .splash-dots i:nth-child(5) { animation-delay: .48s; }
+      .splash-dots i:nth-child(6) { animation-delay: .60s; }
+
+      /* ---- Bloco de erro (falha de conexão) ---- */
+      .splash-error {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        max-width: min(420px, 86vw);
+        text-align: center;
+      }
+      .splash-error-msg {
+        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        color: #b23b3b;
+        line-height: 1.5;
+      }
+      .splash-retry {
+        appearance: none;
+        border: none;
+        cursor: pointer;
+        padding: 11px 22px;
+        border-radius: 999px;
+        background: #2f6fd0;
         color: #fff;
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-        font-size: 22px;
+        font-size: 14px;
         font-weight: 700;
-        letter-spacing: .5px;
-        opacity: 0;
-        animation: splashFade .6s ease .5s forwards;
+        box-shadow: 0 6px 16px rgba(47,111,208,.3);
+        transition: background .2s ease, transform .1s ease;
       }
-      #app-splash .splash-sub {
-        color: rgba(255,255,255,.8);
-        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-        font-size: 13px;
-        margin-top: -14px;
-        opacity: 0;
-        animation: splashFade .6s ease .75s forwards;
+      .splash-retry:hover { background: #275fb4; }
+      .splash-retry:active { transform: scale(.97); }
+
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: none; }
       }
-      #app-splash .splash-bar {
-        width: 160px;
-        height: 4px;
-        border-radius: 4px;
-        background: rgba(255,255,255,.25);
-        overflow: hidden;
-        opacity: 0;
-        animation: splashFade .6s ease .9s forwards;
+      @keyframes barShine {
+        0%   { transform: translateX(-100%); }
+        60%,100% { transform: translateX(100%); }
       }
-      #app-splash .splash-bar > span {
-        display: block;
-        height: 100%;
-        width: 40%;
-        border-radius: 4px;
-        background: #fff;
-        animation: splashLoad 1.1s ease-in-out infinite;
+      @keyframes barIndeterminate {
+        0%   { left: -40%; }
+        100% { left: 100%; }
       }
-      /* Entrada suave do logo: fade-in + leve aproximação, subida e desfoque saindo */
-      @keyframes splashLogoIn {
-        0% {
-          opacity: 0;
-          transform: scale(.9) translateY(18px);
-          filter: drop-shadow(0 16px 38px rgba(0,0,0,0)) blur(7px);
-        }
-        60% { opacity: 1; }
-        100% {
-          opacity: 1;
-          transform: scale(1) translateY(0);
-          filter: drop-shadow(0 16px 38px rgba(0,0,0,.45)) blur(0);
-        }
+      @keyframes dotPulse {
+        0%,100% { background: #c9d6e2; transform: scale(1); }
+        40%     { background: #2f6fd0; transform: scale(1.25); }
       }
-      @keyframes splashFloat {
-        0%,100% { transform: translateY(0); }
-        50%     { transform: translateY(-8px); }
-      }
-      @keyframes splashFade {
-        to { opacity: 1; }
-      }
-      @keyframes splashLoad {
-        0%   { transform: translateX(-120%); }
-        100% { transform: translateX(320%); }
-      }
+
+      /* ---- Acessibilidade: respeita prefers-reduced-motion ---- */
       @media (prefers-reduced-motion: reduce) {
         #root { animation: none; opacity: 1; transform: none; }
         #app-splash { transition: opacity .2s ease, visibility .2s ease; }
-        #app-splash.hide { transform: none; }
-        #app-splash .splash-logo,
-        #app-splash .splash-title,
-        #app-splash .splash-sub,
-        #app-splash .splash-bar,
-        #app-splash .splash-bar > span { animation: none; opacity: 1; }
+        .splash-logo,
+        .splash-logo-wrap::before,
+        .splash-progress,
+        .splash-status,
+        .splash-dots,
+        .splash-dots i,
+        .splash-fill::after { animation: none !important; opacity: 1; }
+        .splash-logo { transform: none; }
+        .splash-fill { transition: none; }
+        .splash-progress.indeterminate .splash-fill { animation: none; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-C2w0Vkzj.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-CrmWsnq1.js">
-    <link rel="modulepreload" crossorigin href="/assets/charts-C-iFs4jf.js">
-    <link rel="modulepreload" crossorigin href="/assets/supabase-CIV1ze8V.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-yLmXAuJT.css">
   </head>
   <body>
-    <!-- Tela de abertura animada (removida automaticamente ao carregar o sistema) -->
-    <div id="app-splash">
-      <video
-        class="splash-video"
-        src="/animacao-cras-v6.mp4?v=6"
-        poster="/splash-poster-v6.jpg?v=6"
-        autoplay
-        muted
-        playsinline
-        preload="auto"
-        aria-label="CRAS Delfinópolis"
-      ></video>
+    <!-- Tela de abertura: logotipo original preservado + barra de progresso REAL.
+         A barra é preenchida pelo boot do sistema (src/lib/boot.ts) conforme as
+         tarefas verdadeiras de inicialização terminam. -->
+    <div id="app-splash" role="status" aria-live="polite" aria-label="Carregando o sistema">
+      <div class="splash-logo-wrap">
+        <img class="splash-logo" src="/splash-logo-v7.png?v=7" alt="CRAS Delfinópolis" />
+      </div>
+
+      <div class="splash-progress" id="splash-progress">
+        <div class="splash-track"><div class="splash-fill" id="splash-fill"></div></div>
+        <span class="splash-pct" id="splash-pct">0%</span>
+      </div>
+
+      <div class="splash-status" id="splash-status">Iniciando…</div>
+
+      <div class="splash-dots" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+
+      <div class="splash-error" id="splash-error" hidden>
+        <div class="splash-error-msg" id="splash-error-msg"></div>
+        <button type="button" class="splash-retry" id="splash-retry">Tentar novamente</button>
+      </div>
     </div>
+
     <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
     <script>
-      /* Rede de segurança: se por qualquer motivo o sistema não terminar de
-         carregar, esconde a tela de abertura mesmo assim para não travar. */
-      window.setTimeout(function () {
-        var r = document.getElementById('root');
-        if (r) r.classList.add('app-ready');
-        var s = document.getElementById('app-splash');
-        if (s) {
-          s.classList.add('hide');
-          window.setTimeout(function () { if (s) s.remove(); }, 700);
+      /* API da tela de abertura usada pelo boot real (src/lib/boot.ts).
+         Mantém a barra ligada às tarefas verdadeiras — nada de porcentagem falsa. */
+      (function () {
+        function byId(id){ return document.getElementById(id); }
+        function els(){
+          return {
+            splash: byId('app-splash'),
+            prog:   byId('splash-progress'),
+            fill:   byId('splash-fill'),
+            pct:    byId('splash-pct'),
+            status: byId('splash-status'),
+            errBox: byId('splash-error'),
+            errMsg: byId('splash-error-msg'),
+            retry:  byId('splash-retry'),
+            root:   byId('root')
+          };
         }
-      }, 9000);
+        var api = {
+          set: function (p, t) {
+            var e = els();
+            if (e.prog) e.prog.classList.remove('indeterminate');
+            p = Math.max(0, Math.min(100, p));
+            if (e.fill) e.fill.style.width = p + '%';
+            if (e.pct) { e.pct.style.display = ''; e.pct.textContent = Math.round(p) + '%'; }
+            if (t && e.status) e.status.textContent = t;
+            if (e.errBox) e.errBox.hidden = true;
+          },
+          indeterminate: function (t) {
+            var e = els();
+            if (e.prog) e.prog.classList.add('indeterminate');
+            if (e.pct) e.pct.style.display = 'none';
+            if (t && e.status) e.status.textContent = t;
+            if (e.errBox) e.errBox.hidden = true;
+          },
+          error: function (msg, onRetry) {
+            var e = els();
+            if (e.prog) e.prog.classList.remove('indeterminate');
+            if (e.errMsg) e.errMsg.textContent = msg;
+            if (e.errBox) e.errBox.hidden = false;
+            if (e.status) e.status.textContent = 'Falha na conexão';
+            if (e.retry) {
+              e.retry.onclick = function () {
+                api.set(8, 'Tentando novamente…');
+                if (typeof onRetry === 'function') onRetry();
+              };
+            }
+          },
+          done: function () {
+            var e = els();
+            if (e.root) e.root.classList.add('app-ready');
+            if (!e.splash) return;
+            window.setTimeout(function () {
+              e.splash.classList.add('hide');
+              window.setTimeout(function () { if (e.splash) e.splash.remove(); }, 700);
+            }, 280);
+          }
+        };
+        window.__crasSplash = api;
+
+        /* Rede de segurança: se em 16s a abertura não terminou nem mostrou erro,
+           não deixa a tela presa — oferece recarregar. */
+        window.setTimeout(function () {
+          var e = els();
+          if (e.splash && !e.splash.classList.contains('hide') && e.errBox && e.errBox.hidden) {
+            api.error('A inicialização está demorando mais que o normal. Verifique sua internet.', function () {
+              window.location.reload();
+            });
+          }
+        }, 16000);
+      })();
     </script>
   </body>
 </html>
