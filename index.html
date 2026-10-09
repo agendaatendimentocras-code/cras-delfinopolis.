@@ -57,7 +57,8 @@
         max-width: 100%;
         height: auto;
         max-height: 100vh;
-        object-fit: contain;
+        -o-object-fit: contain;
+           object-fit: contain;
         background: #6F88B0;
       }
       #app-splash .splash-logo {
@@ -138,6 +139,11 @@
         #app-splash .splash-bar > span { animation: none; opacity: 1; }
       }
     </style>
+    <script type="module" crossorigin src="/assets/index-C2w0Vkzj.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-CrmWsnq1.js">
+    <link rel="modulepreload" crossorigin href="/assets/charts-C-iFs4jf.js">
+    <link rel="modulepreload" crossorigin href="/assets/supabase-CIV1ze8V.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-yLmXAuJT.css">
   </head>
   <body>
     <!-- Tela de abertura animada (removida automaticamente ao carregar o sistema) -->
@@ -154,7 +160,6 @@
       ></video>
     </div>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
     <script>
       /* Rede de segurança: se por qualquer motivo o sistema não terminar de
          carregar, esconde a tela de abertura mesmo assim para não travar. */
