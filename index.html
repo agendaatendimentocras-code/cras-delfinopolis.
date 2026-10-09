@@ -7,8 +7,8 @@
     <meta name="theme-color" content="#f1f5f7" />
     <meta name="description" content="Sistema de Agendamento - CRAS Delfinópolis" />
     <link rel="manifest" href="/manifest.json" />
-    <!-- Pré-carrega o logotipo da abertura para aparecer imediatamente -->
-    <link rel="preload" as="image" href="/splash-logo-v7.png?v=7" />
+    <!-- Pré-carrega a tela oficial de carregamento para aparecer imediatamente -->
+    <link rel="preload" as="image" href="/tela-carregamento-cras-delfinopolis.png" />
     <link rel="apple-touch-icon" href="/favicon-cras.png?v=20261009" />
     <title>CRAS Delfinópolis</title>
     <style>
@@ -32,6 +32,16 @@
         will-change: opacity;
       }
       #app-splash.hide { opacity: 0; visibility: hidden; }
+      /* Imagem oficial enviada pelo usuário: preservar integralmente e sem cortes. */
+      .splash-full-image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        object-position: center;
+      }
 
       /* Conteúdo do sistema surge suavemente e de forma GARANTIDA (sem depender
          de callback de JS) — assim o login nunca fica invisível/travado. */
@@ -234,29 +244,15 @@
     </style>
   </head>
   <body>
-    <!-- Tela de abertura: logotipo original preservado + barra de progresso REAL.
-         A barra é preenchida pelo boot do sistema (src/lib/boot.ts) conforme as
-         tarefas verdadeiras de inicialização terminam. -->
+    <!-- Tela de abertura: imagem oficial fornecida pelo usuário, preservada sem alterações. -->
     <div id="app-splash" role="status" aria-live="polite" aria-label="Carregando o sistema">
-      <div class="splash-logo-wrap">
-        <img class="splash-logo" src="/splash-logo-v7.png?v=7" alt="CRAS Delfinópolis" />
-      </div>
-
-      <div class="splash-progress" id="splash-progress">
-        <div class="splash-track"><div class="splash-fill" id="splash-fill"></div></div>
-        <span class="splash-pct" id="splash-pct">0%</span>
-      </div>
-
-      <div class="splash-status" id="splash-status">Iniciando…</div>
-
-      <div class="splash-dots" aria-hidden="true">
-        <i></i><i></i><i></i><i></i><i></i><i></i>
-      </div>
-
-      <div class="splash-error" id="splash-error" hidden>
-        <div class="splash-error-msg" id="splash-error-msg"></div>
-        <button type="button" class="splash-retry" id="splash-retry">Tentar novamente</button>
-      </div>
+      <img
+        class="splash-full-image"
+        src="/tela-carregamento-cras-delfinopolis.png"
+        alt="Tela de carregamento do CRAS Delfinópolis"
+        fetchpriority="high"
+        decoding="async"
+      />
     </div>
 
     <div id="root"></div>
