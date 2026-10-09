@@ -2,7 +2,7 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon-cras.png?v=20261007" />
+    <link rel="icon" type="image/png" href="/favicon-cras.png?v=20261009" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#6F88B0" />
     <meta name="description" content="Sistema de Agendamento - CRAS Delfinópolis" />
@@ -10,7 +10,7 @@
     <!-- Pré-carrega a abertura para aparecer mais rápido -->
     <link rel="preload" as="image" href="/splash-poster-v6.jpg?v=6" />
     <link rel="preload" as="fetch" href="/animacao-cras-v6.mp4?v=6" type="video/mp4" crossorigin="anonymous" />
-    <link rel="apple-touch-icon" href="/favicon-cras.png?v=20261007" />
+    <link rel="apple-touch-icon" href="/favicon-cras.png?v=20261009" />
     <title>CRAS Delfinópolis</title>
     <style>
       /* Reset para o vídeo de abertura ocupar a tela inteira, sem margens */
@@ -49,14 +49,15 @@
         from { opacity: 0; transform: translateY(10px) scale(.994); }
         to   { opacity: 1; transform: none; }
       }
-      /* Vídeo de abertura em ecrã inteiro (preenche tudo, sem barras vazias) */
+      /* Vídeo de abertura centralizado na tela (sem ficar puxado pra baixo).
+         Mantém a proporção do vídeo e fica no meio, com o fundo azul em volta. */
       #app-splash .splash-video {
-        position: absolute;
-        inset: 0;
+        position: relative;
         width: 100vw;
-        height: 100vh;
-        -o-object-fit: cover;
-           object-fit: cover;
+        max-width: 100%;
+        height: auto;
+        max-height: 100vh;
+        object-fit: contain;
         background: #6F88B0;
       }
       #app-splash .splash-logo {
@@ -137,11 +138,6 @@
         #app-splash .splash-bar > span { animation: none; opacity: 1; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-C2w0Vkzj.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-CrmWsnq1.js">
-    <link rel="modulepreload" crossorigin href="/assets/charts-C-iFs4jf.js">
-    <link rel="modulepreload" crossorigin href="/assets/supabase-CIV1ze8V.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-yLmXAuJT.css">
   </head>
   <body>
     <!-- Tela de abertura animada (removida automaticamente ao carregar o sistema) -->
@@ -158,6 +154,7 @@
       ></video>
     </div>
     <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
     <script>
       /* Rede de segurança: se por qualquer motivo o sistema não terminar de
          carregar, esconde a tela de abertura mesmo assim para não travar. */
