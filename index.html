@@ -235,7 +235,7 @@
         .splash-progress.indeterminate .splash-fill { animation: none; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-CT_G3Aad.js"></script>
+    <script type="module" crossorigin src="/assets/index-BGmrKZLa.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-CrmWsnq1.js">
     <link rel="modulepreload" crossorigin href="/assets/charts-C-iFs4jf.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase-CIV1ze8V.js">
@@ -336,17 +336,55 @@
         };
         window.__crasSplash = api;
 
+        /* ===== Auto-cura de cache (versão velha presa) =====
+           Se em ~6s o pacote principal do app NÃO deu sinal de vida
+           (window.__appAlive), muito provavelmente um service worker antigo
+           está servindo arquivos velhos/quebrados. Então limpamos TUDO
+           (service workers + caches) e recarregamos UMA única vez. */
+        function limparTudoERecarregar(cb) {
+          var finish = function () { (cb || function(){ window.location.reload(); })(); };
+          try {
+            var tasks = [];
+            if ('serviceWorker' in navigator) {
+              tasks.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+                return Promise.all(regs.map(function (r) { return r.unregister(); }));
+              }).catch(function(){}));
+            }
+            if (window.caches && caches.keys) {
+              tasks.push(caches.keys().then(function (ks) {
+                return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+              }).catch(function(){}));
+            }
+            Promise.all(tasks).then(finish, finish);
+          } catch (e) { finish(); }
+        }
+
+        window.setTimeout(function () {
+          if (window.__appAlive) return;              // app carregou normal
+          var KEY = 'cras_selfheal';
+          if (sessionStorage.getItem(KEY)) return;    // já tentou nesta sessão
+          try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+          var e2 = els();
+          if (e2.status) e2.status.textContent = 'Atualizando o aplicativo…';
+          limparTudoERecarregar();
+        }, 6000);
+
         /* Rede de segurança: se em 16s a abertura não terminou nem mostrou erro,
-           não deixa a tela presa — oferece recarregar. */
+           não deixa a tela presa — oferece recarregar limpando o cache. */
         window.setTimeout(function () {
           var e = els();
           if (e.splash && !e.splash.classList.contains('hide') && e.errBox && e.errBox.hidden) {
             api.error('A inicialização está demorando mais que o normal. Verifique sua internet.', function () {
-              window.location.reload();
+              var e3 = els();
+              if (e3.status) e3.status.textContent = 'Atualizando o aplicativo…';
+              limparTudoERecarregar();
             });
           }
         }, 16000);
       })();
     </script>
+
+    <!-- O pacote principal do app carrega DEPOIS que a API da tela de abertura
+         (window.__crasSplash) já está definida acima, evitando a tela presa em 0%. -->
   </body>
 </html>
