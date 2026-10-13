@@ -9,7 +9,7 @@
 // notificações (push + clique na notificação).
 // ============================================================
 
-const CACHE_NAME = 'cras-v2-v44';
+const CACHE_NAME = 'cras-v2-v47';
 
 // ============================================================
 // INSTALL — ativar imediatamente, sem pré-cachear nada
