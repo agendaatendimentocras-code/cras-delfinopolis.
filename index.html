@@ -20,8 +20,8 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: flex-end;
-        padding: 0;
+        justify-content: center;
+        padding: 24px 0 calc(env(safe-area-inset-bottom, 0px) + 24px);
         box-sizing: border-box;
         /* Mesma cor do FUNDO do vídeo (medida direto nas bordas do vídeo):
            preenche as laterais/sobras sem faixas pretas nem divisões. */
@@ -34,31 +34,39 @@
 
       /* ---- Vídeo de abertura (original preservado: inteiro, centralizado) ---- */
       .splash-video {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        /* 'contain' garante o vídeo INTEIRO, sem corte, sem esticar e sem zoom.
-           A sobra em qualquer lado fica na mesma cor sólida do fundo. */
+        position: relative;
+        z-index: 0;
+        /* Vídeo quadrado (1080x1080) exibido INTEIRO e MENOR: ~70% da largura
+           disponível, limitado pela altura para a barra caber logo abaixo.
+           'contain' + aspect-ratio 1/1 = sem corte, sem esticar, sem deformar. */
+        width: min(72vw, 58vh, 460px);
+        aspect-ratio: 1 / 1;
+        height: auto;
         -o-object-fit: contain;
            object-fit: contain;
         -o-object-position: center;
            object-position: center;
-        background: #32ad5e;
-        z-index: 0;
+        display: block;
+        margin: 0 auto;
+        /* Sem fundo próprio: evita qualquer retângulo/tom diferente ao redor do
+           vídeo. O fundo verde uniforme vem apenas do #app-splash. */
+        background: transparent;
+        border: 0;
         pointer-events: none;
       }
 
-      /* Camada da interface (barra de progresso etc.) sobre o vídeo */
+      /* Camada da interface (barra de progresso etc.) LOGO ABAIXO do vídeo */
       .splash-ui {
         position: relative;
         z-index: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 20px;
+        gap: 14px;
         width: 100%;
-        padding: 0 24px calc(env(safe-area-inset-bottom, 0px) + 6vh);
+        /* Pequeno espaçamento entre o vídeo e a barra */
+        margin-top: 26px;
+        padding: 0 24px;
         box-sizing: border-box;
       }
 
@@ -269,7 +277,7 @@
         .splash-progress.indeterminate .splash-fill { animation: none; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-B2efVHR4.js"></script>
+    <script type="module" crossorigin src="/assets/index-CQVp9uM2.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-CrmWsnq1.js">
     <link rel="modulepreload" crossorigin href="/assets/charts-C-iFs4jf.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase-CIV1ze8V.js">
