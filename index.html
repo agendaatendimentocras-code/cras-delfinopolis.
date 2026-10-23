@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon-cras.png?v=20261013" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f1f5f7" />
+    <meta name="theme-color" content="#f7f8fa" />
     <meta name="description" content="Sistema de Agendamento - CRAS Delfinópolis" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/favicon-cras.png?v=20261013" />
@@ -23,9 +23,10 @@
         justify-content: center;
         padding: 24px 0 calc(env(safe-area-inset-bottom, 0px) + 24px);
         box-sizing: border-box;
-        /* Mesma cor do FUNDO do vídeo (medida direto nas bordas do vídeo):
-           preenche as laterais/sobras sem faixas pretas nem divisões. */
-        background: #32ad5e;
+        /* EXATAMENTE a mesma cor do FUNDO do vídeo (medida pixel a pixel nas
+           bordas = #f7f8fa): assim o retângulo do vídeo some no fundo, sem
+           nenhuma moldura/linha visível ao redor. */
+        background: #f7f8fa;
         overflow: hidden;
         transition: opacity .7s ease, visibility .7s ease;
         will-change: opacity;
@@ -36,11 +37,11 @@
       .splash-video {
         position: relative;
         z-index: 0;
-        /* Vídeo quadrado (1080x1080) exibido INTEIRO e MENOR: ~70% da largura
+        /* Vídeo 16:9 (1920x1080) exibido INTEIRO e MENOR: ~72% da largura
            disponível, limitado pela altura para a barra caber logo abaixo.
-           'contain' + aspect-ratio 1/1 = sem corte, sem esticar, sem deformar. */
-        width: min(72vw, 58vh, 460px);
-        aspect-ratio: 1 / 1;
+           'contain' + aspect-ratio 16/9 = sem corte, sem esticar, sem deformar. */
+        width: min(74vw, 620px, calc(62vh * 16 / 9));
+        aspect-ratio: 16 / 9;
         height: auto;
         -o-object-fit: contain;
            object-fit: contain;
@@ -49,10 +50,21 @@
         display: block;
         margin: 0 auto;
         /* Sem fundo próprio: evita qualquer retângulo/tom diferente ao redor do
-           vídeo. O fundo verde uniforme vem apenas do #app-splash. */
+           vídeo. O fundo uniforme vem apenas do #app-splash. */
         background: transparent;
         border: 0;
         pointer-events: none;
+        /* Esfuma suavemente as 4 bordas do vídeo para dissolver no fundo:
+           elimina qualquer linha/moldura visível mesmo com ruído de compressão. */
+        -webkit-mask-image:
+          linear-gradient(to right, transparent 0, #000 5%, #000 95%, transparent 100%),
+          linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
+        -webkit-mask-composite: source-in;
+        mask-image:
+          linear-gradient(to right, transparent 0, #000 5%, #000 95%, transparent 100%),
+          linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
+        -webkit-mask-composite: source-in, xor;
+                mask-composite: intersect;
       }
 
       /* Camada da interface (barra de progresso etc.) LOGO ABAIXO do vídeo */
@@ -164,8 +176,7 @@
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
         font-size: 15px;
         font-weight: 700;
-        color: #ffffff;
-        text-shadow: 0 1px 3px rgba(0,0,0,.35);
+        color: #2f6fd0;
         font-variant-numeric: tabular-nums;
       }
       /* Modo indeterminado: barra desliza sem porcentagem (quando não dá para
@@ -181,8 +192,7 @@
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
         font-size: 14px;
         font-weight: 600;
-        color: #ffffff;
-        text-shadow: 0 1px 3px rgba(0,0,0,.35);
+        color: #475569;
         text-align: center;
         min-height: 18px;
         opacity: 0;
@@ -296,9 +306,9 @@
         loop
         playsinline
         preload="auto"
-        poster="/splash-poster-v7.jpg?v=7"
+        poster="/splash-poster-v8b.jpg?v=8"
       >
-        <source src="/init-video-v7.mp4?v=7" type="video/mp4" />
+        <source src="/init-video-v8.mp4?v=8" type="video/mp4" />
       </video>
 
       <div class="splash-ui">
