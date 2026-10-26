@@ -142,7 +142,7 @@
         left: 0; top: 0; bottom: 0;
         width: 0%;
         border-radius: 999px;
-        background: linear-gradient(90deg, #ffffff, #dcefff);
+        background: linear-gradient(90deg, #ffd21e, #f6ab00);
         transition: width .45s cubic-bezier(.22,.61,.36,1);
       }
       /* Brilho que desliza sobre a parte preenchida da barra */
@@ -160,7 +160,7 @@
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
         font-size: 15px;
         font-weight: 700;
-        color: #ffffff;
+        color: #ffd21e;
         font-variant-numeric: tabular-nums;
       }
       /* Modo indeterminado: barra desliza sem porcentagem (quando não dá para
@@ -252,7 +252,7 @@
       }
       @keyframes dotPulse {
         0%,100% { background: rgba(255,255,255,.45); transform: scale(1); }
-        40%     { background: #ffffff; transform: scale(1.25); }
+        40%     { background: #ffd21e; transform: scale(1.25); }
       }
 
       /* ---- Acessibilidade: respeita prefers-reduced-motion ---- */
@@ -287,11 +287,12 @@
         id="splash-video"
         autoplay
         muted
+        loop
         playsinline
         preload="auto"
-        poster="/splash-poster-v10.jpg?v=10"
+        poster="/splash-poster-v11.jpg?v=11"
       >
-        <source src="/init-video-v10.mp4?v=10" type="video/mp4" />
+        <source src="/init-video-v11.mp4?v=11" type="video/mp4" />
       </video>
 
       <div class="splash-ui">
