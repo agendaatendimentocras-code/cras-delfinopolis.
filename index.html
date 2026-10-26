@@ -37,11 +37,11 @@
       .splash-video {
         position: relative;
         z-index: 0;
-        /* Vídeo 16:9 (1920x1080) exibido INTEIRO e PROPORCIONAL: ocupa a área
-           disponível no TOPO, limitado pela ALTURA para a barra caber LOGO
-           ABAIXO em qualquer resolução. 'contain' + aspect-ratio 16/9 =
-           sem corte, sem esticar, sem desfocar, sem deformar. */
-        width: min(94vw, 1200px, calc((100vh - 230px) * 16 / 9));
+        /* Vídeo 16:9 (1920x1080) o MAIOR possível, ocupando a tela toda: vai de
+           borda a borda na largura (até 100vw) e é limitado pela ALTURA só o
+           suficiente para SOBRAR um espaço para a barra logo abaixo.
+           'contain' + aspect-ratio 16/9 = sem corte, sem esticar, sem desfocar. */
+        width: min(100vw, calc((100vh - 150px) * 16 / 9));
         aspect-ratio: 16 / 9;
         height: auto;
         -o-object-fit: contain;
@@ -295,9 +295,9 @@
         muted
         playsinline
         preload="auto"
-        poster="/splash-poster-v9.jpg?v=9"
+        poster="/splash-poster-v10.jpg?v=10"
       >
-        <source src="/init-video-v9.mp4?v=9" type="video/mp4" />
+        <source src="/init-video-v10.mp4?v=10" type="video/mp4" />
       </video>
 
       <div class="splash-ui">
