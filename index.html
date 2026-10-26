@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon-cras.png?v=20261025" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f7f8fa" />
+    <meta name="theme-color" content="#0d84f3" />
     <meta name="description" content="Sistema de Agendamento - CRAS Delfinópolis" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/favicon-cras.png?v=20261025" />
@@ -23,10 +23,10 @@
         justify-content: center;
         padding: 24px 0 calc(env(safe-area-inset-bottom, 0px) + 24px);
         box-sizing: border-box;
-        /* EXATAMENTE a mesma cor do FUNDO do vídeo (medida pixel a pixel nas
-           bordas = #f7f8fa): assim o retângulo do vídeo some no fundo, sem
-           nenhuma moldura/linha visível ao redor. */
-        background: #f7f8fa;
+        /* Mesma faixa de cor do FUNDO do vídeo original (gradiente azul medido
+           pixel a pixel nas bordas): o vídeo se funde ao fundo, sem moldura/
+           linha visível, e o fundo completa os espaços restantes. */
+        background: linear-gradient(180deg, #45b7fe 0%, #1f9efb 50%, #0d84f3 100%);
         overflow: hidden;
         transition: opacity .7s ease, visibility .7s ease;
         will-change: opacity;
@@ -37,10 +37,11 @@
       .splash-video {
         position: relative;
         z-index: 0;
-        /* Vídeo 16:9 (1920x1080) exibido INTEIRO e MENOR: ~72% da largura
-           disponível, limitado pela altura para a barra caber logo abaixo.
-           'contain' + aspect-ratio 16/9 = sem corte, sem esticar, sem deformar. */
-        width: min(74vw, 620px, calc(62vh * 16 / 9));
+        /* Vídeo 16:9 (1920x1080) exibido INTEIRO e PROPORCIONAL: ocupa a área
+           disponível no TOPO, limitado pela ALTURA para a barra caber LOGO
+           ABAIXO em qualquer resolução. 'contain' + aspect-ratio 16/9 =
+           sem corte, sem esticar, sem desfocar, sem deformar. */
+        width: min(94vw, 1200px, calc((100vh - 230px) * 16 / 9));
         aspect-ratio: 16 / 9;
         height: auto;
         -o-object-fit: contain;
@@ -49,22 +50,11 @@
            object-position: center;
         display: block;
         margin: 0 auto;
-        /* Sem fundo próprio: evita qualquer retângulo/tom diferente ao redor do
-           vídeo. O fundo uniforme vem apenas do #app-splash. */
+        /* Sem fundo próprio e SEM máscara: o vídeo é exibido cru (bordas nítidas,
+           sem borrar). O fundo azul do #app-splash completa os espaços restantes. */
         background: transparent;
         border: 0;
         pointer-events: none;
-        /* Esfuma suavemente as 4 bordas do vídeo para dissolver no fundo:
-           elimina qualquer linha/moldura visível mesmo com ruído de compressão. */
-        -webkit-mask-image:
-          linear-gradient(to right, transparent 0, #000 5%, #000 95%, transparent 100%),
-          linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
-        -webkit-mask-composite: source-in;
-        mask-image:
-          linear-gradient(to right, transparent 0, #000 5%, #000 95%, transparent 100%),
-          linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
-        -webkit-mask-composite: source-in, xor;
-                mask-composite: intersect;
       }
 
       /* Camada da interface (barra de progresso etc.) LOGO ABAIXO do vídeo */
@@ -149,7 +139,7 @@
         flex: 1;
         height: 8px;
         border-radius: 999px;
-        background: #dfe7ee;
+        background: rgba(255,255,255,.35);
         overflow: hidden;
         box-shadow: 0 1px 4px rgba(0,0,0,.25);
       }
@@ -158,7 +148,7 @@
         left: 0; top: 0; bottom: 0;
         width: 0%;
         border-radius: 999px;
-        background: linear-gradient(90deg, #2f6fd0, #4fa3f2);
+        background: linear-gradient(90deg, #ffffff, #dcefff);
         transition: width .45s cubic-bezier(.22,.61,.36,1);
       }
       /* Brilho que desliza sobre a parte preenchida da barra */
@@ -176,7 +166,7 @@
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
         font-size: 15px;
         font-weight: 700;
-        color: #2f6fd0;
+        color: #ffffff;
         font-variant-numeric: tabular-nums;
       }
       /* Modo indeterminado: barra desliza sem porcentagem (quando não dá para
@@ -192,7 +182,7 @@
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
         font-size: 14px;
         font-weight: 600;
-        color: #475569;
+        color: rgba(255,255,255,.95);
         text-align: center;
         min-height: 18px;
         opacity: 0;
@@ -209,7 +199,7 @@
       .splash-dots i {
         width: 9px; height: 9px;
         border-radius: 50%;
-        background: #c9d6e2;
+        background: rgba(255,255,255,.45);
         display: inline-block;
         animation: dotPulse 1.3s ease-in-out infinite;
       }
@@ -232,7 +222,7 @@
       .splash-error-msg {
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
         font-size: 14px;
-        color: #b23b3b;
+        color: #ffe3e3;
         line-height: 1.5;
       }
       .splash-retry {
@@ -243,15 +233,15 @@
         cursor: pointer;
         padding: 11px 22px;
         border-radius: 999px;
-        background: #2f6fd0;
-        color: #fff;
+        background: #ffffff;
+        color: #0d6fd0;
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
         font-size: 14px;
         font-weight: 700;
-        box-shadow: 0 6px 16px rgba(47,111,208,.3);
+        box-shadow: 0 6px 16px rgba(0,0,0,.18);
         transition: background .2s ease, transform .1s ease;
       }
-      .splash-retry:hover { background: #275fb4; }
+      .splash-retry:hover { background: #eaf3ff; }
       .splash-retry:active { transform: scale(.97); }
 
       @keyframes fadeUp {
@@ -267,8 +257,8 @@
         100% { left: 100%; }
       }
       @keyframes dotPulse {
-        0%,100% { background: #c9d6e2; transform: scale(1); }
-        40%     { background: #2f6fd0; transform: scale(1.25); }
+        0%,100% { background: rgba(255,255,255,.45); transform: scale(1); }
+        40%     { background: #ffffff; transform: scale(1.25); }
       }
 
       /* ---- Acessibilidade: respeita prefers-reduced-motion ---- */
@@ -303,12 +293,11 @@
         id="splash-video"
         autoplay
         muted
-        loop
         playsinline
         preload="auto"
-        poster="/splash-poster-v8b.jpg?v=8"
+        poster="/splash-poster-v9.jpg?v=9"
       >
-        <source src="/init-video-v8.mp4?v=8" type="video/mp4" />
+        <source src="/init-video-v9.mp4?v=9" type="video/mp4" />
       </video>
 
       <div class="splash-ui">
@@ -342,6 +331,40 @@
       (function () {
         var startedAt = Date.now();
         function byId(id){ return document.getElementById(id); }
+
+        /* ===== Sincronização do vídeo de abertura com o carregamento REAL =====
+           Quando a inicialização verdadeira do sistema termina (o boot chama
+           done()), avançamos o vídeo para o segundo de sincronização (8s),
+           desde que ele ainda esteja ANTES desse ponto — nunca retrocedemos.
+           O vídeo NUNCA é usado como prova de que o sistema está pronto: quem
+           dá esse sinal é sempre o boot real. */
+        var SYNC_SECONDS = 8;
+        var systemReady = false;
+        var videoSynced = false;
+        function syncVideoToReady() {
+          if (videoSynced || !systemReady) return;
+          var v = byId('splash-video');
+          if (!v) { videoSynced = true; return; }
+          /* Metadados ainda não disponíveis: espera o loadedmetadata e repete. */
+          if (isNaN(v.duration) || v.duration <= 0 || v.readyState < 1) {
+            v.addEventListener('loadedmetadata', syncVideoToReady, { once: true });
+            return;
+          }
+          videoSynced = true; /* trava: o salto acontece uma única vez */
+          try {
+            if (v.currentTime < SYNC_SECONDS && v.duration > SYNC_SECONDS) {
+              var onSeeked = function () {
+                v.removeEventListener('seeked', onSeeked);
+                try { v.play(); } catch (e) {}
+              };
+              v.addEventListener('seeked', onSeeked);
+              v.currentTime = SYNC_SECONDS; /* dispara seeking → seeked */
+            } else {
+              /* Já passou do segundo 8: não retrocede, apenas segue tocando. */
+              try { v.play(); } catch (e) {}
+            }
+          } catch (e) { /* ignora falhas de seek */ }
+        }
         function els(){
           return {
             splash: byId('app-splash'),
@@ -386,6 +409,9 @@
             }
           },
           done: function () {
+            /* Sinal REAL de "sistema pronto": sincroniza o vídeo (salto p/ 8s). */
+            systemReady = true;
+            syncVideoToReady();
             var e = els();
             if (e.root) e.root.classList.add('app-ready');
             if (!e.splash) return;
