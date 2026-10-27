@@ -19,47 +19,31 @@
         z-index: 9999;
         display: block;
         box-sizing: border-box;
-        /* Fundo azul casando com as bordas do vídeo (topo mais claro, base mais
-           escura) para que qualquer faixa restante fique discreta. */
-        background: linear-gradient(180deg, #2bb0fe 0%, #0e8ef9 55%, #0a7bef 100%);
+        /* Fundo azul IGUAL às bordas do próprio vídeo (topo = #2bb2f9, base =
+           #038cf9), para que o espaço acima/abaixo do vídeo não tenha emenda
+           nem moldura — fica tudo um azul só, contínuo com o vídeo. */
+        background: linear-gradient(180deg, #2bb2f9 0%, #2bb2f9 30%, #0a9bf9 65%, #038cf9 100%);
         overflow: hidden;
         transition: opacity .7s ease, visibility .7s ease;
         will-change: opacity;
       }
       #app-splash.hide { opacity: 0; visibility: hidden; }
 
-      /* ---- Fundo: cópia do próprio vídeo, ampliada e suavizada, preenchendo a
-           tela toda ATRÁS do vídeo principal. Assim não sobra faixa nem
-           diferença com o fundo, e o vídeo principal aparece INTEIRO (sem cortar). */
-      .splash-bg {
-        position: absolute;
-        inset: 0;
-        z-index: 0;
-        width: 100%;
-        height: 100%;
-        -o-object-fit: cover;
-           object-fit: cover;
-        -o-object-position: center;
-           object-position: center;
-        transform: scale(1.18);
-        filter: blur(36px) saturate(1.08);
-        pointer-events: none;
-      }
-
-      /* ---- Vídeo de abertura: INTEIRO e centralizado (sem cortar, sem esticar) ---- */
+      /* ---- Vídeo de abertura: INTEIRO (sem cortar, sem esticar), descido um
+           pouco na tela ---- */
       .splash-video {
         position: absolute;
         inset: 0;
         z-index: 1;
         width: 100%;
         height: 100%;
-        /* CONTAIN: mostra o vídeo COMPLETO, na proporção original, SEM cortar as
-           laterais, SEM esticar e SEM distorcer. O espaço que sobra é preenchido
-           pelo fundo suave (.splash-bg), então não há diferença com o fundo. */
+        /* CONTAIN: mostra o vídeo COMPLETO, na proporção original, SEM cortar,
+           SEM esticar e SEM distorcer. object-position desce o vídeo um pouco
+           na tela (62%). O espaço que sobra fica no mesmo azul do fundo. */
         -o-object-fit: contain;
            object-fit: contain;
-        -o-object-position: center;
-           object-position: center;
+        -o-object-position: center 62%;
+           object-position: center 62%;
         display: block;
         background: transparent;
         border: 0;
@@ -300,19 +284,6 @@
          A barra é preenchida pelo boot do sistema (src/lib/boot.ts) conforme as
          tarefas verdadeiras de inicialização terminam. -->
     <div id="app-splash" role="status" aria-live="polite" aria-label="Carregando o sistema">
-      <video
-        class="splash-bg"
-        id="splash-bg"
-        autoplay
-        muted
-        loop
-        playsinline
-        preload="auto"
-        poster="/splash-poster-v11.jpg?v=11"
-        aria-hidden="true"
-      >
-        <source src="/init-video-v11.mp4?v=11" type="video/mp4" />
-      </video>
       <video
         class="splash-video"
         id="splash-video"
