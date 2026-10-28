@@ -22,42 +22,31 @@
         /* Fundo azul IGUAL às bordas do próprio vídeo (topo = #2bb2f9, base =
            #038cf9), para que o espaço acima/abaixo do vídeo não tenha emenda
            nem moldura — fica tudo um azul só, contínuo com o vídeo. */
-        background: linear-gradient(180deg, #2bb2f9 0%, #2bb2f9 30%, #0a9bf9 65%, #038cf9 100%);
+        background: linear-gradient(180deg, #30b5fa 0%, #1aa7f9 34%, #0a9df8 62%, #058efa 100%);
         overflow: hidden;
         transition: opacity .7s ease, visibility .7s ease;
         will-change: opacity;
       }
       #app-splash.hide { opacity: 0; visibility: hidden; }
 
-      /* ---- CAMADA DE FUNDO: o PRÓPRIO vídeo, ampliado e bem desfocado,
-           preenchendo 100% da tela. Serve só para estender o azul do vídeo
-           para as laterais/topo/base — sem emendas, sem moldura, sem faixa. ---- */
-      .splash-bg {
-        position: absolute;
-        inset: 0;
-        z-index: 0;
-        width: 100%;
-        height: 100%;
-        -o-object-fit: cover;
-           object-fit: cover;
-        /* amplia um pouco para não aparecer beirada ao desfocar */
-        transform: scale(1.25);
-        filter: blur(42px) saturate(1.05) brightness(1.02);
-        display: block;
-        background: transparent;
-        border: 0;
-        pointer-events: none;
-      }
+      /* ---- FUNDO uniforme: usamos o degradê azul do próprio #app-splash
+           (mesmo azul da animação) para cobrir a tela toda, de ponta a ponta,
+           SEM faixas laterais de tom diferente. Não há cópia desfocada do vídeo. ---- */
 
-      /* ---- Vídeo PRINCIPAL: a ilustração aparece INTEIRA (contain), centralizada
-           vertical e horizontalmente, sem cortar nada e sem esticar. O espaço
-           que sobra nas laterais é preenchido pela camada de fundo azul acima. ---- */
+      /* ---- Vídeo PRINCIPAL: a ilustração aparece INTEIRA (contain) e MENOR,
+           centralizada, com espaço azul ao redor. Sem cortes, sem esticar,
+           sem transparência. O FUNDO azul é que preenche os espaços. ---- */
       .splash-video {
         position: absolute;
-        inset: 0;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         z-index: 1;
-        width: 100%;
-        height: 100%;
+        /* bem menor que a tela, para sobrar azul em volta em qualquer proporção */
+        width: 86%;
+        height: 78%;
+        max-width: 86vw;
+        max-height: 78vh;
         /* CONTAIN: mostra a ilustração COMPLETA (mãos, família, topo e base),
            sem cortes e sem deformar. */
         -o-object-fit: contain;
@@ -304,19 +293,6 @@
          A barra é preenchida pelo boot do sistema (src/lib/boot.ts) conforme as
          tarefas verdadeiras de inicialização terminam. -->
     <div id="app-splash" role="status" aria-live="polite" aria-label="Carregando o sistema">
-      <video
-        class="splash-bg"
-        id="splash-bg"
-        autoplay
-        muted
-        loop
-        playsinline
-        preload="auto"
-        aria-hidden="true"
-        poster="/splash-poster-v11.jpg?v=11"
-      >
-        <source src="/init-video-v11.mp4?v=11" type="video/mp4" />
-      </video>
       <video
         class="splash-video"
         id="splash-video"
