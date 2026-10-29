@@ -29,13 +29,32 @@
       }
       #app-splash.hide { opacity: 0; visibility: hidden; }
 
-      /* ---- FUNDO uniforme: usamos o degradê azul do próprio #app-splash
-           (mesmo azul da animação) para cobrir a tela toda, de ponta a ponta,
-           SEM faixas laterais de tom diferente. Não há cópia desfocada do vídeo. ---- */
+      /* ---- FUNDO que PREENCHE a tela de ponta a ponta: uma CÓPIA do próprio
+           vídeo em object-fit: cover (100% largura x 100% altura), ampliada e
+           bem desfocada. Assim NÃO sobra faixa azul sólida nas laterais nem em
+           cima/embaixo — o espaço ao redor do vídeo principal fica preenchido
+           com a mesma imagem (desfocada), sem emenda de cor e sem deformar o
+           vídeo principal. ---- */
+      .splash-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        -o-object-fit: cover;
+           object-fit: cover;        /* cobre a tela toda, adaptando-se ao monitor */
+        -o-object-position: center center;
+           object-position: center center;
+        /* ampliar + desfocar forte elimina qualquer borda/emenda visível */
+        transform: scale(1.2);
+        filter: blur(44px) brightness(.9) saturate(1.05);
+        z-index: 0;
+        pointer-events: none;
+        backface-visibility: hidden;
+      }
 
-      /* ---- Palco 16:9: a ilustração aparece INTEIRA, sem corte e sem
-           distorção. O vídeo tem a MESMA proporção (16:9) do palco, logo
-           preenche-o exatamente; o fundo azul cobre o espaço acima/abaixo. ---- */
+      /* ---- Palco 16:9: a ilustração principal aparece INTEIRA, sem corte e
+           sem distorção. O fundo desfocado acima preenche todo o resto da
+           tela, então NÃO há faixas de cor sólida em volta. ---- */
       .splash-stage {
         position: absolute;
         inset: 0;
@@ -332,6 +351,17 @@
          A barra é preenchida pelo boot do sistema (src/lib/boot.ts) conforme as
          tarefas verdadeiras de inicialização terminam. -->
     <div id="app-splash" role="status" aria-live="polite" aria-label="Carregando o sistema">
+      <!-- Fundo: cópia da imagem do vídeo em tela cheia (cover) e desfocada,
+           para preencher de ponta a ponta sem faixas azuis sólidas. Usamos a
+           imagem (leve) em vez de um 2º vídeo 4K: sob desfoque forte fica
+           idêntica e não pesa no carregamento. -->
+      <img
+        class="splash-bg"
+        id="splash-bg"
+        src="/splash-poster-4k-v12.jpg?v=12"
+        alt=""
+        aria-hidden="true"
+      />
       <div class="splash-stage">
         <video
           class="splash-video"
