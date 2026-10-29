@@ -22,7 +22,7 @@
         /* Fundo azul IGUAL às bordas do próprio vídeo (topo = #2bb2f9, base =
            #038cf9), para que o espaço acima/abaixo do vídeo não tenha emenda
            nem moldura — fica tudo um azul só, contínuo com o vídeo. */
-        background: linear-gradient(180deg, #30b5fa 0%, #1aa7f9 34%, #0a9df8 62%, #058efa 100%);
+        background: linear-gradient(180deg, #3f9ff7 0%, #4ba3f6 45%, #5fb0f4 100%);
         overflow: hidden;
         transition: opacity .7s ease, visibility .7s ease;
         will-change: opacity;
@@ -33,31 +33,68 @@
            (mesmo azul da animação) para cobrir a tela toda, de ponta a ponta,
            SEM faixas laterais de tom diferente. Não há cópia desfocada do vídeo. ---- */
 
-      /* ---- Vídeo PRINCIPAL: a ilustração aparece INTEIRA (contain) e MENOR,
-           centralizada, com espaço azul ao redor. Sem cortes, sem esticar,
-           sem transparência. O FUNDO azul é que preenche os espaços. ---- */
+      /* ---- Palco 16:9: a ilustração aparece INTEIRA, sem corte e sem
+           distorção. O vídeo tem a MESMA proporção (16:9) do palco, logo
+           preenche-o exatamente; o fundo azul cobre o espaço acima/abaixo. ---- */
+      .splash-stage {
+        position: absolute;
+        inset: 0;
+        margin: auto;
+        width: min(100vw, calc(100vh * 16 / 9));
+        height: min(100vh, calc(100vw * 9 / 16));
+        z-index: 1;
+      }
       .splash-video {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 1;
-        /* bem menor que a tela, para sobrar azul em volta em qualquer proporção */
-        width: 86%;
-        height: 78%;
-        max-width: 86vw;
-        max-height: 78vh;
-        /* CONTAIN: mostra a ilustração COMPLETA (mãos, família, topo e base),
-           sem cortes e sem deformar. */
-        -o-object-fit: contain;
-           object-fit: contain;
-        -o-object-position: center center;
-           object-position: center center;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        /* proporção do vídeo = proporção do palco (16:9): preenche sem esticar */
+        -o-object-fit: fill;
+           object-fit: fill;
         display: block;
         background: transparent;
         border: 0;
         pointer-events: none;
       }
+      /* ---- Preenchimento DOURADO sobre a barra que JÁ EXISTE dentro do vídeo.
+           Posição em % do palco 16:9, ajustável pelas variáveis abaixo. NÃO há
+           segunda barra: isto apenas "enche" o trilho do próprio vídeo com o
+           progresso REAL do carregamento. ---- */
+      .bar-overlay {
+        position: absolute;
+        left: var(--bar-left, 34.6%);
+        top: var(--bar-top, 78.3%);
+        width: var(--bar-width, 30.8%);
+        height: var(--bar-height, 2.8%);
+        border-radius: 999px;
+        overflow: hidden;
+        z-index: 2;
+        pointer-events: none;
+      }
+      .bar-fill {
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 0%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #f6ab00, #ffcb3a);
+        box-shadow: 0 0 6px rgba(246,171,0,.45);
+        transition: width .55s cubic-bezier(.22,.61,.36,1);
+      }
+      .bar-fill::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.5) 50%, rgba(255,255,255,0) 100%);
+        transform: translateX(-100%);
+        animation: barShine 1.8s ease-in-out infinite;
+      }
+      .bar-fill.indeterminate {
+        width: 38% !important;
+        transition: none;
+        animation: barIndeterminate 1.3s ease-in-out infinite;
+      }
+      .bar-fill.indeterminate::after { animation: none; }
 
       /* Barra de progresso FIXA NA PARTE DE BAIXO, sobre o vídeo (sem borda azul
          em volta). Um leve escurecimento só atrás da barra garante a leitura. */
@@ -132,10 +169,11 @@
 
       /* ---- Barra de progresso REAL ---- */
       .splash-progress {
-        width: min(380px, 80vw);
         display: flex;
         align-items: center;
-        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
         opacity: 0;
         animation: fadeUp .6s ease .35s forwards;
       }
@@ -166,13 +204,13 @@
         animation: barShine 1.8s ease-in-out infinite;
       }
       .splash-pct {
-        min-width: 44px;
         text-align: right;
         font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
         font-size: 15px;
         font-weight: 700;
         color: #ffd21e;
         font-variant-numeric: tabular-nums;
+        text-shadow: 0 1px 3px rgba(0,0,0,.35);
       }
       /* Modo indeterminado: barra desliza sem porcentagem (quando não dá para
          calcular um valor real confiável). */
@@ -189,9 +227,8 @@
         font-weight: 600;
         color: rgba(255,255,255,.95);
         text-align: center;
-        min-height: 18px;
-        opacity: 0;
-        animation: fadeUp .6s ease .45s forwards;
+        opacity: 1;
+        text-shadow: 0 1px 3px rgba(0,0,0,.35);
       }
 
       /* ---- Pontos de carregamento ---- */
@@ -279,6 +316,8 @@
         .splash-fill::after { animation: none !important; opacity: 1; }
         .splash-logo { transform: none; }
         .splash-fill { transition: none; }
+        .bar-fill { transition: none; animation: none !important; }
+        .bar-fill::after { animation: none !important; }
         .splash-progress.indeterminate .splash-fill { animation: none; }
       }
     </style>
@@ -293,18 +332,23 @@
          A barra é preenchida pelo boot do sistema (src/lib/boot.ts) conforme as
          tarefas verdadeiras de inicialização terminam. -->
     <div id="app-splash" role="status" aria-live="polite" aria-label="Carregando o sistema">
-      <video
-        class="splash-video"
-        id="splash-video"
-        autoplay
-        muted
-        loop
-        playsinline
-        preload="auto"
-        poster="/splash-poster-v11.jpg?v=11"
-      >
-        <source src="/init-video-v11.mp4?v=11" type="video/mp4" />
-      </video>
+      <div class="splash-stage">
+        <video
+          class="splash-video"
+          id="splash-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="auto"
+          poster="/splash-poster-4k-v12.jpg?v=12"
+        >
+          <source src="/init-video-4k-v12.mp4?v=12" type="video/mp4" />
+        </video>
+        <!-- Preenchimento DOURADO sobre a barra que JÁ EXISTE dentro do vídeo.
+             Cresce de 0% a 100% conforme o progresso REAL do boot. -->
+        <div class="bar-overlay" aria-hidden="true"><div class="bar-fill" id="splash-barfill"></div></div>
+      </div>
 
       <div class="splash-ui">
       <div class="splash-logo-wrap" hidden>
@@ -312,14 +356,8 @@
       </div>
 
       <div class="splash-progress" id="splash-progress">
-        <div class="splash-track"><div class="splash-fill" id="splash-fill"></div></div>
+        <span class="splash-status" id="splash-status">Iniciando…</span>
         <span class="splash-pct" id="splash-pct">0%</span>
-      </div>
-
-      <div class="splash-status" id="splash-status">Iniciando…</div>
-
-      <div class="splash-dots" aria-hidden="true">
-        <i></i><i></i><i></i><i></i><i></i><i></i>
       </div>
 
       <div class="splash-error" id="splash-error" hidden>
@@ -376,6 +414,7 @@
             splash: byId('app-splash'),
             prog:   byId('splash-progress'),
             fill:   byId('splash-fill'),
+            barfill:byId('splash-barfill'),
             pct:    byId('splash-pct'),
             status: byId('splash-status'),
             errBox: byId('splash-error'),
@@ -390,6 +429,7 @@
             if (e.prog) e.prog.classList.remove('indeterminate');
             p = Math.max(0, Math.min(100, p));
             if (e.fill) e.fill.style.width = p + '%';
+            if (e.barfill) { e.barfill.classList.remove('indeterminate'); e.barfill.style.width = p + '%'; }
             if (e.pct) { e.pct.style.display = ''; e.pct.textContent = Math.round(p) + '%'; }
             if (t && e.status) e.status.textContent = t;
             if (e.errBox) e.errBox.hidden = true;
@@ -397,6 +437,7 @@
           indeterminate: function (t) {
             var e = els();
             if (e.prog) e.prog.classList.add('indeterminate');
+            if (e.barfill) e.barfill.classList.add('indeterminate');
             if (e.pct) e.pct.style.display = 'none';
             if (t && e.status) e.status.textContent = t;
             if (e.errBox) e.errBox.hidden = true;
