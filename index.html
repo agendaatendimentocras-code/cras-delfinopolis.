@@ -29,38 +29,16 @@
       }
       #app-splash.hide { opacity: 0; visibility: hidden; }
 
-      /* ---- FUNDO que PREENCHE a tela de ponta a ponta: uma CÓPIA do próprio
-           vídeo em object-fit: cover (100% largura x 100% altura), ampliada e
-           bem desfocada. Assim NÃO sobra faixa azul sólida nas laterais nem em
-           cima/embaixo — o espaço ao redor do vídeo principal fica preenchido
-           com a mesma imagem (desfocada), sem emenda de cor e sem deformar o
-           vídeo principal. ---- */
-      .splash-bg {
+      /* ---- VÍDEO EM TELA CHEIA: ocupa 100% da largura e 100% da altura da
+           tela, adaptando-se à resolução do monitor. object-fit: cover preenche
+           tudo (sem faixas azuis / sem bordas), mantendo a proporção do vídeo
+           (não distorce). Quando a tela não é 16:9, o cover recorta um pouco as
+           sobras e mantém a ilustração centralizada. ---- */
+      .splash-stage {
         position: absolute;
         inset: 0;
         width: 100%;
         height: 100%;
-        -o-object-fit: cover;
-           object-fit: cover;        /* cobre a tela toda, adaptando-se ao monitor */
-        -o-object-position: center center;
-           object-position: center center;
-        /* ampliar + desfocar forte elimina qualquer borda/emenda visível */
-        transform: scale(1.2);
-        filter: blur(44px) brightness(.9) saturate(1.05);
-        z-index: 0;
-        pointer-events: none;
-        backface-visibility: hidden;
-      }
-
-      /* ---- Palco 16:9: a ilustração principal aparece INTEIRA, sem corte e
-           sem distorção. O fundo desfocado acima preenche todo o resto da
-           tela, então NÃO há faixas de cor sólida em volta. ---- */
-      .splash-stage {
-        position: absolute;
-        inset: 0;
-        margin: auto;
-        width: min(100vw, calc(100vh * 16 / 9));
-        height: min(100vh, calc(100vw * 9 / 16));
         z-index: 1;
       }
       .splash-video {
@@ -68,24 +46,25 @@
         inset: 0;
         width: 100%;
         height: 100%;
-        /* proporção do vídeo = proporção do palco (16:9): preenche sem esticar */
-        -o-object-fit: fill;
-           object-fit: fill;
+        -o-object-fit: cover;
+           object-fit: cover;              /* preenche a tela inteira, sem bordas */
+        -o-object-position: center center;
+           object-position: center center; /* ilustração centralizada */
         display: block;
         background: transparent;
         border: 0;
         pointer-events: none;
       }
       /* ---- Preenchimento DOURADO sobre a barra que JÁ EXISTE dentro do vídeo.
-           Posição em % do palco 16:9, ajustável pelas variáveis abaixo. NÃO há
-           segunda barra: isto apenas "enche" o trilho do próprio vídeo com o
-           progresso REAL do carregamento. ---- */
+           A posição (left/top/width/height) é calculada por JS para acompanhar
+           o recorte do cover em qualquer resolução, mantendo o dourado EXATO
+           sobre o trilho do vídeo. NÃO há segunda barra. ---- */
       .bar-overlay {
         position: absolute;
-        left: var(--bar-left, 34.6%);
-        top: var(--bar-top, 78.3%);
-        width: var(--bar-width, 30.8%);
-        height: var(--bar-height, 2.8%);
+        left: 34.6%;
+        top: 78.3%;
+        width: 30.8%;
+        height: 2.8%;
         border-radius: 999px;
         overflow: hidden;
         z-index: 2;
@@ -351,17 +330,6 @@
          A barra é preenchida pelo boot do sistema (src/lib/boot.ts) conforme as
          tarefas verdadeiras de inicialização terminam. -->
     <div id="app-splash" role="status" aria-live="polite" aria-label="Carregando o sistema">
-      <!-- Fundo: cópia da imagem do vídeo em tela cheia (cover) e desfocada,
-           para preencher de ponta a ponta sem faixas azuis sólidas. Usamos a
-           imagem (leve) em vez de um 2º vídeo 4K: sob desfoque forte fica
-           idêntica e não pesa no carregamento. -->
-      <img
-        class="splash-bg"
-        id="splash-bg"
-        src="/splash-poster-4k-v12.jpg?v=12"
-        alt=""
-        aria-hidden="true"
-      />
       <div class="splash-stage">
         <video
           class="splash-video"
@@ -405,6 +373,34 @@
       (function () {
         var startedAt = Date.now();
         function byId(id){ return document.getElementById(id); }
+
+        /* ===== Alinhamento da barra dourada sobre o trilho do vídeo =====
+           Com object-fit: cover o vídeo é ampliado e recortado para preencher a
+           tela. Para o dourado cair EXATAMENTE sobre a barra já desenhada no
+           vídeo, recalculamos a posição da barra (em pixels) a partir do recorte
+           real, em qualquer resolução. */
+        var VID_W = 3840, VID_H = 2160; /* resolução do vídeo (16:9) */
+        /* Frações do trilho dentro do quadro do vídeo (0..1). */
+        var BAR = { x: 0.346, y: 0.783, w: 0.308, h: 0.028 };
+        function positionSplashBar(){
+          var stage = document.querySelector('.splash-stage');
+          var overlay = document.querySelector('.bar-overlay');
+          if (!stage || !overlay) return;
+          var W = stage.clientWidth, H = stage.clientHeight;
+          if (!W || !H) return;
+          var s = Math.max(W / VID_W, H / VID_H); /* escala do cover */
+          var rw = VID_W * s, rh = VID_H * s;      /* tamanho renderizado */
+          var offX = (W - rw) / 2, offY = (H - rh) / 2; /* recorte centralizado */
+          overlay.style.left   = (offX + BAR.x * rw) + 'px';
+          overlay.style.top    = (offY + BAR.y * rh) + 'px';
+          overlay.style.width  = (BAR.w * rw) + 'px';
+          overlay.style.height = (BAR.h * rh) + 'px';
+        }
+        window.addEventListener('resize', positionSplashBar);
+        window.addEventListener('orientationchange', positionSplashBar);
+        positionSplashBar();
+        window.setTimeout(positionSplashBar, 120);
+        window.setTimeout(positionSplashBar, 600);
 
         /* ===== Sincronização do vídeo de abertura com o carregamento REAL =====
            Quando a inicialização verdadeira do sistema termina (o boot chama
