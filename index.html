@@ -301,6 +301,20 @@
         40%     { background: #ffd21e; transform: scale(1.25); }
       }
 
+
+      /* Barra independente do vídeo: progresso alimentado pelas etapas reais do boot. */
+      .splash-ui { gap: 10px; padding: 22px 24px calc(env(safe-area-inset-bottom, 0px) + 24px); }
+      .splash-progress { width: min(760px, 88vw); display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px 14px; }
+      .splash-status { grid-column: 1 / -1; font-size: 14px; }
+      .splash-track { grid-column: 1; grid-row: 2; width: 100%; height: 10px; }
+      .splash-pct { grid-column: 2; grid-row: 2; min-width: 48px; }
+      .splash-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; }
+      @media (max-width: 600px) {
+        .splash-ui { padding-left: 16px; padding-right: 16px; }
+        .splash-progress { width: 94vw; }
+        .splash-status { font-size: 12px; }
+      }
+
       /* ---- Acessibilidade: respeita prefers-reduced-motion ---- */
       @media (prefers-reduced-motion: reduce) {
         #root { animation: none; opacity: 1; transform: none; }
@@ -341,11 +355,11 @@
           preload="auto"
           poster="/splash-poster-4k-v12.jpg?v=12"
         >
-          <source src="/init-video-4k-v12.mp4?v=12" type="video/mp4" />
+          <source src="/init-video-cras-novo.mp4?v=1" type="video/mp4" />
         </video>
         <!-- Preenchimento DOURADO sobre a barra que JÁ EXISTE dentro do vídeo.
              Cresce de 0% a 100% conforme o progresso REAL do boot. -->
-        <div class="bar-overlay" aria-hidden="true"><div class="bar-fill" id="splash-barfill"></div></div>
+        
       </div>
 
       <div class="splash-ui">
@@ -355,6 +369,7 @@
 
       <div class="splash-progress" id="splash-progress">
         <span class="splash-status" id="splash-status">Iniciando…</span>
+        <div class="splash-track"><div class="splash-fill" id="splash-fill"></div></div>
         <span class="splash-pct" id="splash-pct">0%</span>
       </div>
 
@@ -440,7 +455,7 @@
             splash: byId('app-splash'),
             prog:   byId('splash-progress'),
             fill:   byId('splash-fill'),
-            barfill:byId('splash-barfill'),
+            barfill:byId('splash-fill'),
             pct:    byId('splash-pct'),
             status: byId('splash-status'),
             errBox: byId('splash-error'),
