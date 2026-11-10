@@ -1,5 +1,5 @@
 // ============================================================
-// CRAS Delfinópolis V3 — Service Worker
+// CRAS Delfinópolis V2 — Service Worker
 //
 // IMPORTANTE: este service worker NÃO faz mais cache de páginas
 // nem de arquivos do app. O cache agressivo estava servindo uma
