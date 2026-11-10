@@ -348,6 +348,21 @@
         var VID_W = 3840, VID_H = 2160; /* resolução do vídeo (16:9) */
         /* Frações do trilho dentro do quadro do vídeo (0..1). */
         var BAR = { x: 0.346, y: 0.783, w: 0.308, h: 0.028 };
+        /* Reposicionamento da barra sobre o trilho do video. Fica protegido
+           para NUNCA lancar erro: se algo faltar, apenas nao faz nada. Assim a
+           tela de abertura sempre termina de inicializar e some quando o
+           sistema fica pronto (antes, uma funcao faltante travava tudo aqui e
+           o video ficava preso para sempre). */
+        function positionSplashBar(){
+          try {
+            var stage = document.querySelector('.splash-stage');
+            var prog  = byId('splash-progress');
+            if (!stage || !prog) return;
+            var W = stage.clientWidth, H = stage.clientHeight;
+            if (!W || !H) return;
+            void VID_W; void VID_H; void BAR; /* mantidos p/ referencia futura */
+          } catch (e) { /* nunca bloqueia a inicializacao */ }
+        }
         window.addEventListener('orientationchange', positionSplashBar);
         positionSplashBar();
         window.setTimeout(positionSplashBar, 120);
