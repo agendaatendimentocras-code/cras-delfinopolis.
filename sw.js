@@ -1,5 +1,5 @@
 // ============================================================
-// CRAS Delfinópolis V2 — Service Worker
+// CRAS Delfinópolis V3 — Service Worker
 //
 // IMPORTANTE: este service worker NÃO faz mais cache de páginas
 // nem de arquivos do app. O cache agressivo estava servindo uma
@@ -9,7 +9,7 @@
 // notificações (push + clique na notificação).
 // ============================================================
 
-const CACHE_NAME = 'cras-v2-v116';
+const CACHE_NAME = 'cras-v2-v117';
 
 // ============================================================
 // INSTALL — ativar imediatamente, sem pré-cachear nada
