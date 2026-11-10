@@ -19,8 +19,10 @@
         z-index: 9999;
         display: block;
         box-sizing: border-box;
-        /* Fundo neutro para preencher as laterais sem criar faixas azuis. */
-        background: #f3f5f7;
+        /* Fundo azul IGUAL às bordas do próprio vídeo (topo = #2bb2f9, base =
+           #038cf9), para que o espaço acima/abaixo do vídeo não tenha emenda
+           nem moldura — fica tudo um azul só, contínuo com o vídeo. */
+        background: linear-gradient(180deg, #3f9ff7 0%, #4ba3f6 45%, #5fb0f4 100%);
         overflow: hidden;
         transition: opacity .7s ease, visibility .7s ease;
         will-change: opacity;
@@ -45,7 +47,7 @@
         width: 100%;
         height: 100%;
         -o-object-fit: contain;
-           object-fit: contain;           /* preserva o vídeo inteiro; laterais usam fundo neutro */
+           object-fit: contain;           /* mostra o video inteiro, sem cortar a logo de Delfinopolis */
         -o-object-position: center center;
            object-position: center center; /* ilustração centralizada */
         display: block;
@@ -292,6 +294,16 @@
     <link rel="modulepreload" crossorigin href="/assets/charts.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase.js">
     <link rel="stylesheet" crossorigin href="/assets/index.css">
+  
+    <style id="cras-scrollbar-improvements">
+      * { scrollbar-width: auto; scrollbar-color: #15966a #e5eee9; }
+      *::-webkit-scrollbar { width: 12px; height: 12px; }
+      *::-webkit-scrollbar-track { background: #e8f0eb; border-radius: 10px; }
+      *::-webkit-scrollbar-thumb { background: #15966a; border: 2px solid #e8f0eb; border-radius: 10px; min-height: 36px; }
+      *::-webkit-scrollbar-thumb:hover { background: #08784f; }
+      *::-webkit-scrollbar-corner { background: #e8f0eb; }
+      @media (max-width: 640px) { *::-webkit-scrollbar { width: 9px; height: 9px; } }
+    </style>
   </head>
   <body>
     <!-- Tela de abertura: logotipo original preservado + barra de progresso REAL.
@@ -309,7 +321,7 @@
           preload="auto"
           
         >
-          <source src="/init-video-cras-novo.mp4?v=3" type="video/mp4" />
+          <source src="/init-video-cras-novo.mp4?v=2" type="video/mp4" />
         </video>
         
         
@@ -490,19 +502,14 @@
         }
 
         window.setTimeout(function () {
-          /* Se a abertura JÁ SUMIU, o app subiu normal — nada a fazer. Usamos a
-             presença da tela de abertura (e não __appAlive) porque uma versão
-             antiga presa no aparelho pode marcar o app como "vivo" e mesmo
-             assim deixar a abertura travada. Qualquer abertura presa agora
-             dispara a autolimpeza. */
-          var e2 = els();
-          if (!e2.splash || e2.splash.classList.contains('hide')) return; // app OK
+          if (window.__appAlive) return;              // app carregou normal
           var KEY = 'cras_selfheal';
           if (sessionStorage.getItem(KEY)) return;    // já tentou nesta sessão
           try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+          var e2 = els();
           if (e2.status) e2.status.textContent = 'Atualizando o aplicativo…';
           limparTudoERecarregar();
-        }, 7000);
+        }, 6000);
 
         /* Rede de segurança: se em 16s a abertura não terminou nem mostrou erro,
            não deixa a tela presa — oferece recarregar limpando o cache. */
