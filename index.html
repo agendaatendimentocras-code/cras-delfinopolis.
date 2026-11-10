@@ -490,14 +490,19 @@
         }
 
         window.setTimeout(function () {
-          if (window.__appAlive) return;              // app carregou normal
+          /* Se a abertura JÁ SUMIU, o app subiu normal — nada a fazer. Usamos a
+             presença da tela de abertura (e não __appAlive) porque uma versão
+             antiga presa no aparelho pode marcar o app como "vivo" e mesmo
+             assim deixar a abertura travada. Qualquer abertura presa agora
+             dispara a autolimpeza. */
+          var e2 = els();
+          if (!e2.splash || e2.splash.classList.contains('hide')) return; // app OK
           var KEY = 'cras_selfheal';
           if (sessionStorage.getItem(KEY)) return;    // já tentou nesta sessão
           try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
-          var e2 = els();
           if (e2.status) e2.status.textContent = 'Atualizando o aplicativo…';
           limparTudoERecarregar();
-        }, 6000);
+        }, 7000);
 
         /* Rede de segurança: se em 16s a abertura não terminou nem mostrou erro,
            não deixa a tela presa — oferece recarregar limpando o cache. */
