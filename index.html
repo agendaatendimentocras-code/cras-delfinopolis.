@@ -29,33 +29,28 @@
       }
       #app-splash.hide { opacity: 0; visibility: hidden; }
 
-      /* ---- VÍDEO SEM CORTES: mantém a proporção original e mostra o quadro
-           inteiro em qualquer monitor. O espaço que sobrar é preenchido pelo
-           fundo azul do sistema; nunca ampliar/cortar a logo nas extremidades. ---- */
+      /* ---- VÍDEO EM TELA CHEIA: ocupa 100% da largura e 100% da altura da
+           tela, adaptando-se à resolução do monitor. object-fit: cover preenche
+           tudo (sem faixas azuis / sem bordas), mantendo a proporção do vídeo
+           (não distorce). Quando a tela não é 16:9, o cover recorta um pouco as
+           sobras e mantém a ilustração centralizada. ---- */
       .splash-stage {
         position: absolute;
         inset: 0;
         width: 100%;
         height: 100%;
         z-index: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        background: transparent;
       }
       .splash-video {
-        position: relative;
-        inset: auto;
-        display: block;
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
-        max-width: 100%;
-        max-height: 100%;
         -o-object-fit: contain;
-           object-fit: contain;
+           object-fit: contain;           /* mostra o video inteiro, sem cortar a logo de Delfinopolis */
         -o-object-position: center center;
-           object-position: center center;
+           object-position: center center; /* ilustração centralizada */
+        display: block;
         background: transparent;
         border: 0;
         pointer-events: none;
@@ -294,21 +289,11 @@
         .splash-progress.indeterminate .splash-fill { animation: none; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index.js?v=avatar4"></script>
+    <script type="module" crossorigin src="/assets/index.js?v=avatar5"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor.js">
     <link rel="modulepreload" crossorigin href="/assets/charts.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase.js">
     <link rel="stylesheet" crossorigin href="/assets/index.css">
-  
-    <style id="cras-scrollbar-improvements">
-      * { scrollbar-width: auto; scrollbar-color: #15966a #e5eee9; }
-      *::-webkit-scrollbar { width: 12px; height: 12px; }
-      *::-webkit-scrollbar-track { background: #e8f0eb; border-radius: 10px; }
-      *::-webkit-scrollbar-thumb { background: #15966a; border: 2px solid #e8f0eb; border-radius: 10px; min-height: 36px; }
-      *::-webkit-scrollbar-thumb:hover { background: #08784f; }
-      *::-webkit-scrollbar-corner { background: #e8f0eb; }
-      @media (max-width: 640px) { *::-webkit-scrollbar { width: 9px; height: 9px; } }
-    </style>
   </head>
   <body>
     <!-- Tela de abertura: logotipo original preservado + barra de progresso REAL.
@@ -355,8 +340,11 @@
         var startedAt = Date.now();
         function byId(id){ return document.getElementById(id); }
 
-        /* O vídeo usa object-fit: contain e não recebe recorte. A barra de
-           progresso real fica em uma camada independente, no rodapé. */
+        /* ===== Alinhamento da barra dourada sobre o trilho do vídeo =====
+           Com object-fit: cover o vídeo é ampliado e recortado para preencher a
+           tela. Para o dourado cair EXATAMENTE sobre a barra já desenhada no
+           vídeo, recalculamos a posição da barra (em pixels) a partir do recorte
+           real, em qualquer resolução. */
         var VID_W = 3840, VID_H = 2160; /* resolução do vídeo (16:9) */
         /* Frações do trilho dentro do quadro do vídeo (0..1). */
         var BAR = { x: 0.346, y: 0.783, w: 0.308, h: 0.028 };

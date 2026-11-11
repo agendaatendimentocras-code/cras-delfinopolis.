@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Separar Duplicados - CRAS</title>
+<style>
+  :root{
+    --azul:#1d4e89; --azul2:#2f6fb3; --verde:#1f9d6b; --verde-bg:#e8f7f0;
+    --amarelo-bg:#fff6e0; --amarelo:#b7791f; --cinza:#6b7280; --borda:#e2e8f0;
+    --fundo:#f4f6fb; --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--fundo);color:#1f2937;}
+  header{background:linear-gradient(135deg,var(--azul),var(--azul2));color:#fff;padding:22px 28px;}
+  header h1{margin:0;font-size:22px;}
+  header p{margin:6px 0 0;opacity:.9;font-size:14px;}
+  .wrap{max-width:1050px;margin:0 auto;padding:22px;}
+  .passo{background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .passo h2{margin:0 0 4px;font-size:17px;color:var(--azul);}
+  .passo .sub{color:var(--cinza);font-size:13px;margin-bottom:14px;}
+  .num{display:inline-flex;width:26px;height:26px;background:var(--azul);color:#fff;border-radius:50%;align-items:center;justify-content:center;font-weight:bold;margin-right:8px;font-size:14px;}
+  #drop{border:2px dashed #b9c6dd;border-radius:12px;padding:30px;text-align:center;color:var(--cinza);transition:.15s;cursor:pointer;}
+  #drop.hover{border-color:var(--azul);background:#eef4fc;color:var(--azul);}
+  #drop b{color:var(--azul);}
+  .btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;}
+  .btn{border:none;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
+  .btn-azul{background:var(--azul);color:#fff;}
+  .btn-azul:hover{background:var(--azul2);}
+  .btn-verde{background:var(--verde);color:#fff;}
+  .btn-verde:hover{filter:brightness(1.05);}
+  .btn-claro{background:#eef2f9;color:var(--azul);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .resumo{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 4px;}
+  .card-num{flex:1;min-width:150px;border-radius:12px;padding:16px;text-align:center;}
+  .card-num .n{font-size:30px;font-weight:800;line-height:1;}
+  .card-num .l{font-size:13px;margin-top:6px;color:var(--cinza);}
+  .c-total{background:#eef2f9;} .c-dup{background:var(--amarelo-bg);} .c-dup .n{color:var(--amarelo);}
+  .c-uni{background:var(--verde-bg);} .c-uni .n{color:var(--verde);}
+  .tabs{display:flex;gap:6px;margin:6px 0 0;flex-wrap:wrap;}
+  .tab{padding:10px 16px;border:1px solid var(--borda);border-bottom:none;border-radius:10px 10px 0 0;background:#f0f3f9;cursor:pointer;font-weight:600;font-size:14px;color:var(--cinza);}
+  .tab.ativa{background:#fff;color:var(--azul);border-color:var(--azul);}
+  .painel{background:#fff;border:1px solid var(--azul);border-radius:0 12px 12px 12px;padding:16px;}
+  .busca{width:100%;padding:11px 14px;border:1px solid var(--borda);border-radius:10px;font-size:14px;margin-bottom:12px;}
+  .grupo{border:1px solid var(--borda);border-left:5px solid var(--amarelo);border-radius:10px;margin-bottom:14px;overflow:hidden;}
+  .grupo-h{background:var(--amarelo-bg);padding:10px 14px;font-weight:700;color:#92590f;font-size:14px;}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--borda);vertical-align:middle;}
+  th{background:#f8fafc;color:var(--cinza);font-size:12px;text-transform:uppercase;letter-spacing:.3px;}
+  td.cpf{font-variant-numeric:tabular-nums;color:#374151;}
+  .chk{width:20px;height:20px;cursor:pointer;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+  .tag-dup{background:var(--amarelo-bg);color:var(--amarelo);} .tag-uni{background:var(--verde-bg);color:var(--verde);}
+  .vazio{color:var(--cinza);text-align:center;padding:26px;}
+  .aviso{font-size:13px;color:var(--cinza);margin-top:10px;}
+  .barra{height:10px;background:#e5e9f2;border-radius:6px;overflow:hidden;margin-top:14px;display:none;}
+  .barra > i{display:block;height:100%;width:0;background:var(--azul);transition:width .1s;}
+  footer{text-align:center;color:var(--cinza);font-size:12px;padding:18px;}
+  .hide{display:none;}
+</style>
+</head>
+<body>
+<header>
+  <a href="/" style="display:inline-flex;align-items:center;gap:6px;color:#fff;text-decoration:none;font-size:13px;opacity:.9;margin-bottom:8px;">⬅ Voltar ao sistema</a>
+  <h1>🗂️ Separar Duplicados</h1>
+  <p>Leia os arquivos, separe os duplicados dos únicos, confira e baixe a cópia final. Tudo aqui no navegador — nada sai do seu computador.</p>
+</header>
+<div class="wrap">
+  <!-- PASSO 1 -->
+  <div class="passo">
+    <h2><span class="num">1</span>Escolha os arquivos</h2>
+    <div class="sub">Arraste a pasta inteira (ou os arquivos .docx) para a área abaixo, ou use os botões.</div>
+    <div id="drop">
+      📁 <b>Arraste aqui</b> a pasta ou os arquivos .docx<br><span style="font-size:13px">ou use os botões abaixo</span>
+    </div>
+    <div class="btns">
+      <button class="btn btn-azul" id="btnPasta">📂 Escolher uma pasta</button>
+      <button class="btn btn-claro" id="btnArquivos">📄 Escolher arquivos</button>
+      <button class="btn btn-claro" id="btnLimpar">🧹 Limpar</button>
+    </div>
+    <input type="file" id="inpPasta" webkitdirectory directory multiple class="hide">
+    <input type="file" id="inpArquivos" accept=".docx" multiple class="hide">
+    <div class="barra" id="barra"><i id="barraI"></i></div>
+    <div class="aviso" id="status"></div>
+  </div>
+
+  <!-- PASSO 2: resultados -->
+  <div class="passo hide" id="boxResultado">
+    <h2><span class="num">2</span>Confira os resultados</h2>
+    <div class="sub">Os <b>únicos</b> já vêo na cópia final. Nos <b>duplicados</b>, deixe marcado só o arquivo que você quer manter.</div>
+    <div class="resumo">
+      <div class="card-num c-total"><div class="n" id="nTotal">0</div><div class="l">Arquivos lidos</div></div>
+      <div class="card-num c-dup"><div class="n" id="nDup">0</div><div class="l">Grupos de duplicados</div></div>
+      <div class="card-num c-uni"><div class="n" id="nUni">0</div><div class="l">Únicos</div></div>
+    </div>
+    <div class="tabs">
+      <div class="tab ativa" data-aba="dup">🟨 Duplicados</div>
+      <div class="tab" data-aba="uni">🟩 Únicos</div>
+      <div class="tab" data-aba="todos">📋 Todos</div>
+    </div>
+    <div class="painel">
+      <div id="barraAcao" style="display:none;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:#f0f7f3;border:1px solid #cdeadd;border-radius:10px;">
+        <button class="btn btn-verde" id="btnEnviar">➡️ Enviar para os Únicos</button>
+        <button class="btn btn-claro" id="btnDesfazer" style="display:none;">↩️ Desfazer envio</button>
+        <span id="avisoEnvio" class="aviso" style="margin:0;"></span>
+      </div>
+      <input type="text" class="busca" id="busca" placeholder="🔍 Buscar por nome ou CPF...">
+      <div id="conteudo"></div>
+    </div>
+  </div>
+
+  <!-- PASSO 3: baixar -->
+  <div class="passo hide" id="boxBaixar">
+    <h2><span class="num">3</span>Baixe a cópia final</h2>
+    <div class="sub">Baixe o .zip com os únicos (já incluindo os que você enviou). Nada é apagado do seu computador — este é só um download de cópia.</div>
+    <div class="btns">
+      <button class="btn btn-verde" id="btnBaixar">⬇️ Baixar cópia final (.zip)</button>
+      <button class="btn btn-claro" id="btnCsv">📊 Baixar relatório (Excel/CSV)</button>
+    </div>
+    <div class="aviso" id="statusBaixar"></div>
+  </div>
+
+  <footer>Funciona sem internet • nenhum arquivo é enviado para fora do computador</footer>
+</div>
+<script src="jszip.min.js"></script>
+<script>
+// ============================================================
+//  SEPARAR DUPLICADOS - logica da pagina
+// ============================================================
+const arquivos = [];          // {file, nome, cpf, nomeNorm}
+let gruposDup = [];           // [{chave, itens:[indices]}]
+let indicesUnicos = [];
+let selecao = {};             // indice -> true/false (duplicado que fica)
+let enviados = [];            // indices dos duplicados ja enviados para os unicos
+let extrasParaApagar = [];    // indices das copias extras (duplicados que nao ficam)
+let backupEnvio = null;       // guarda estado antes do ultimo envio (para desfazer)
+let abaAtual = 'dup';
+
+const $ = (id) => document.getElementById(id);
+
+// ---------- normalizar nome (tira acento, MAIUSCULO) ----------
+function normaliza(t){
+  if(!t) return '';
+  return t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase()
+          .replace(/[^A-Z ]/g,' ').replace(/\s+/g,' ').trim();
+}
+
+// ---------- distancia de edicao ----------
+function distancia(a,b){
+  a = a || ''; b = b || '';
+  const la = a.length, lb = b.length;
+  if(la===0) return lb;
+  if(lb===0) return la;
+  let prev = new Array(lb+1);
+  for(let j=0;j<=lb;j++) prev[j]=j;
+  for(let i=1;i<=la;i++){
+    const cur = [i];
+    for(let j=1;j<=lb;j++){
+      const c = a[i-1]===b[j-1]?0:1;
+      cur[j] = Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+c);
+    }
+    prev = cur;
+  }
+  return prev[lb];
+}
+
+// ---------- extrai NOME e CPF do texto do docx ----------
+function extrairPessoa(texto, nomeArquivo){
+  let nome = '';
+  const mn = texto.match(/S\s*r\s*\(?\s*A?\s*\)?\s*:\s*(.+)/i);
+  if(mn) nome = mn[1].trim();
+  if(!nome) nome = nomeArquivo.replace(/\.[^.]+$/,'');
+  nome = nome.replace(/\s+/g,' ').trim();
+
+  let cpf = '';
+  const mc = texto.match(/CPF[^0-9]{0,6}([0-9.\-\s]{11,20})/i);
+  if(mc) cpf = mc[1].replace(/[^0-9]/g,'');
+  if(cpf.length!==11){
+    const m2 = texto.match(/(?:^|\D)(\d{11})(?!\d)/);
+    if(m2) cpf = m2[1];
+  }
+  return {nome, cpf};
+}
+
+// ---------- le o texto de dentro de um .docx ----------
+async function lerDocx(file){
+  const buf = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(new Uint8Array(buf));
+  const ent = zip.file('word/document.xml');
+  if(!ent) return '';
+  let xml = await ent.async('string');
+  xml = xml.replace(/<\/w:p>/g,'\n').replace(/<w:tab[^>]*>/g,' ');
+  xml = xml.replace(/<[^>]+>/g,'');
+  xml = xml.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+           .replace(/&quot;/g,'\"').replace(/&apos;/g,"'");
+  return xml;
+}
+
+// ---------- mesma pessoa? ----------
+function mesmaPessoa(a,b){
+  if(a.cpf.length===11 && b.cpf.length===11 && distancia(a.cpf,b.cpf)<=1) return true;
+  if(a.nomeNorm && b.nomeNorm && distancia(a.nomeNorm,b.nomeNorm)<=1) return true;
+  return false;
+}
+
+// ============================================================
+//  RECEBER ARQUIVOS
+// ============================================================
+function receberFiles(lista, dePasta){
+  const novos = [];
+  for(const f of lista){
+    const nome = (f.name||'').toLowerCase();
+    if(nome.endsWith('.docx') && !nome.startsWith('~$')) novos.push(f);
+  }
+  if(novos.length===0){
+    $('status').textContent = '⚠️ Não achei nenhum arquivo .docx. Confira se escolheu a pasta certa.';
+    return;
+  }
+  arquivos.length = 0;
+  novos.forEach(f=>arquivos.push({file:f}));
+  processar();
+}
+
+async function processar(){
+  const barra = $('barra'), bi = $('barraI');
+  barra.style.display='block'; bi.style.width='0%';
+  $('status').textContent = 'Lendo ' + arquivos.length + ' arquivo(s)... aguarde.';
+  $('btnBaixar').disabled = true;
+  enviados = []; backupEnvio = null; extrasParaApagar = [];
+  $('avisoEnvio').textContent = '';
+  $('btnDesfazer').style.display = 'none';
+
+  for(let i=0;i<arquivos.length;i++){
+    try{
+      const texto = await lerDocx(arquivos[i].file);
+      const p = extrairPessoa(texto, arquivos[i].file.name);
+      arquivos[i].nome = p.nome;
+      arquivos[i].cpf  = p.cpf;
+      arquivos[i].nomeNorm = normaliza(p.nome);
+    }catch(e){
+      arquivos[i].nome = arquivos[i].file.name.replace(/\.[^.]+$/,'');
+      arquivos[i].cpf = '';
+      arquivos[i].nomeNorm = normaliza(arquivos[i].nome);
+    }
+    bi.style.width = Math.round(((i+1)/arquivos.length)*100)+'%';
+  }
+
+  agrupar();
+  barra.style.display='none';
+  $('status').textContent = '✅ Pronto! Li ' + arquivos.length + ' arquivo(s).';
+  $('boxResultado').classList.remove('hide');
+  $('boxBaixar').classList.remove('hide');
+  render();
+  $('boxResultado').scrollIntoView({behavior:'smooth'});
+}
+
+// ---------- agrupar ----------
+function agrupar(){
+  const pai = arquivos.map((_,i)=>i);
+  const raiz = x => { while(pai[x]!==x){ pai[x]=pai[pai[x]]; x=pai[x]; } return x; };
+  const une = (a,b) => { const ra=raiz(a), rb=raiz(b); if(ra!==rb) pai[rb]=ra; };
+
+  for(let i=0;i<arquivos.length;i++)
+    for(let j=i+1;j<arquivos.length;j++)
+      if(mesmaPessoa(arquivos[i],arquivos[j])) une(i,j);
+
+  const mapa = {};
+  for(let i=0;i<arquivos.length;i++){
+    const r = raiz(i);
+    (mapa[r] = mapa[r]||[]).push(i);
+  }
+
+  gruposDup = []; indicesUnicos = []; selecao = {};
+  Object.values(mapa).forEach(g=>{
+    if(g.length>=2){
+      const idx = gruposDup.length;
+      gruposDup.push({itens:g});
+      g.forEach((k,pos)=>{ selecao[k] = (pos===0); });  // primeiro marcado por padrao
+    }else{
+      indicesUnicos.push(g[0]);
+    }
+  });
+  // ordena grupos por nome
+  gruposDup.sort((a,b)=> (arquivos[a.itens[0]].nomeNorm||'').localeCompare(arquivos[b.itens[0]].nomeNorm||''));
+
+  $('nTotal').textContent = arquivos.length;
+  $('nDup').textContent   = gruposDup.length;
+  $('nUni').textContent   = indicesUnicos.length;
+}
+
+// ============================================================
+//  MOSTRAR NA TELA
+// ============================================================
+const esc = (s) => String(s).replace(/[&<>"\']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function cpfBonito(c){ if(!c||c.length!==11) return c||'(sem CPF)'; return c.slice(0,3)+'.'+c.slice(3,6)+'.'+c.slice(6,9)+'-'+c.slice(9); }
+
+function itVisivelDup(it, termo){
+  if(!termo) return true;
+  return (it.nome||'').toLowerCase().includes(termo) || (it.cpf||'').includes(termo) || (it.file.name||'').toLowerCase().includes(termo);
+}
+function itVisivelUni(it, termo){
+  if(!termo) return true;
+  return (it.nome||'').toLowerCase().includes(termo) || (it.cpf||'').includes(termo) || (it.file.name||'').toLowerCase().includes(termo);
+}
+
+function render(){
+  const termo = ($('busca').value||'').trim().toLowerCase();
+  let html = '';
+
+  if(abaAtual==='dup' || abaAtual==='todos'){
+    if(gruposDup.length===0){
+      if(abaAtual==='dup') html += '<div class="vazio">Nenhum duplicado encontrado. 🎉</div>';
+    } else {
+      gruposDup.forEach((g,gi)=>{
+        const vis = g.itens.filter(k=>itVisivelDup(arquivos[k], termo));
+        if(vis.length===0) return;
+        const p = arquivos[g.itens[0]];
+        html += '<div class="grupo"><div class="grupo-h">GRUPO '+String(gi+1).padStart(2,'0')+' &nbsp;•&nbsp; '+esc(p.nome)+' &nbsp;<span style="font-weight:400">('+cpfBonito(p.cpf)+')</span> &nbsp;—&nbsp; '+g.itens.length+' arquivos</div>';
+        html += '<table><thead><tr><th style="width:44px">Manter</th><th>Arquivo</th><th>Nome lido</th><th>CPF lido</th></tr></thead><tbody>';
+        g.itens.forEach(k=>{
+          const it = arquivos[k];
+          const ck = selecao[k] ? 'checked' : '';
+          html += '<tr><td><input type="checkbox" class="chk" data-idx="'+k+'" '+ck+'></td>';
+          html += '<td>'+esc(it.file.name)+'</td><td>'+esc(it.nome)+'</td><td class="cpf">'+cpfBonito(it.cpf)+'</td></tr>';
+        });
+        html += '</tbody></table></div>';
+      });
+      if(abaAtual==='dup' && !html) html = '<div class="vazio">Nenhum duplicado para o filtro.</div>';
+    }
+  }
+
+  if(abaAtual==='uni' || abaAtual==='todos'){
+    const vis = indicesUnicos.filter(k=>itVisivelUni(arquivos[k], termo));
+    if(abaAtual==='uni' || (abaAtual==='todos' && vis.length)){
+      html += '<div class="grupo" style="border-left-color:var(--verde)"><div class="grupo-h" style="background:var(--verde-bg);color:#0d6b48">🟩 ÚNICOS ('+vis.length+')</div>';
+      html += '<table><thead><tr><th>Arquivo</th><th>Nome lido</th><th>CPF lido</th><th style="width:70px">Situação</th></tr></thead><tbody>';
+      vis.forEach(k=>{
+        const it = arquivos[k];
+        const tag = it.enviado ? '<span class="tag tag-uni">ENVIADO</span>' : '<span class="tag tag-uni">ÚNICO</span>';
+        html += '<tr><td>'+esc(it.file.name)+'</td><td>'+esc(it.nome)+'</td><td class="cpf">'+cpfBonito(it.cpf)+'</td><td>'+tag+'</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+    if(abaAtual==='uni' && vis.length===0) html = '<div class="vazio">Nenhum único para o filtro.</div>';
+  }
+
+  $('conteudo').innerHTML = html;
+
+  // a barra de ações (Enviar / Desfazer) aparece quando há duplicados ou um envio recente
+  $('barraAcao').style.display = (gruposDup.length>0 || backupEnvio) ? 'flex' : 'none';
+  $('btnEnviar').style.display = (gruposDup.length>0) ? 'inline-flex' : 'none';
+
+  document.querySelectorAll('#conteudo .chk').forEach(cb=>{
+    cb.addEventListener('change', e=>{
+      const i = parseInt(e.target.dataset.idx,10);
+      selecao[i] = e.target.checked;
+    });
+  });
+}
+
+// abas
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('ativa'));
+    t.classList.add('ativa');
+    abaAtual = t.dataset.aba;
+    render();
+  });
+});
+$('busca').addEventListener('input', render);
+
+// ============================================================
+//  ENVIAR DUPLICADOS MARCADOS PARA OS UNICOS
+// ============================================================
+function limparGruposVazios(){
+  gruposDup = gruposDup.filter(g=>g.itens.length>=2);
+  $('nDup').textContent = gruposDup.length;
+  $('nUni').textContent = indicesUnicos.length;
+}
+
+
+// lista de indices das COPIAS EXTRAS (duplicados que NAO ficam):
+//  - os que ja foram separados ao clicar "Enviar" (extrasParaApagar)
+//  - mais os que ainda estao nos grupos sem a marca "Manter"
+function listaExtras(){
+  const s = new Set(extrasParaApagar);
+  gruposDup.forEach(g=>g.itens.forEach(k=>{ if(!selecao[k]) s.add(k); }));
+  return Array.from(s);
+}
+
+$('btnEnviar').addEventListener('click', ()=>{
+  const marcados = [];
+  gruposDup.forEach(g=>g.itens.forEach(k=>{ if(selecao[k]) marcados.push(k); }));
+  if(marcados.length===0){
+    $('avisoEnvio').textContent = '⚠️ Nenhum arquivo marcado. Marque os que você quer manter na coluna "Manter".';
+    return;
+  }
+
+  // guarda o estado para permitir desfazer
+  backupEnvio = {
+    grupos: gruposDup.map(g=>({itens:g.itens.slice()})),
+    unicos: indicesUnicos.slice(),
+    selecao: Object.assign({}, selecao)
+  };
+
+  // tira os marcados dos grupos (viram unicos); os nao marcados viram copias extras
+  gruposDup.forEach(g=>{
+    g.itens = g.itens.filter(k=>{
+      if(selecao[k]){
+        if(!indicesUnicos.includes(k)) indicesUnicos.push(k);
+        arquivos[k].enviado = true;
+        if(!enviados.includes(k)) enviados.push(k);
+        return false;
+      } else {
+        if(!extrasParaApagar.includes(k)) extrasParaApagar.push(k);
+        return false;
+      }
+    });
+  });
+  limparGruposVazios();
+
+  const n = marcados.length;
+  $('avisoEnvio').textContent = '✅ ' + n + ' arquivo(s) enviado(s) para os Únicos.';
+  $('btnDesfazer').style.display = 'inline-flex';
+
+  // troca para a aba Unicos automaticamente
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('ativa'));
+  const tUni = document.querySelector('.tab[data-aba="uni"]');
+  if(tUni) tUni.classList.add('ativa');
+  abaAtual = 'uni';
+
+  render();
+});
+
+$('btnDesfazer').addEventListener('click', ()=>{
+  if(!backupEnvio) return;
+  gruposDup = backupEnvio.grupos;
+  indicesUnicos = backupEnvio.unicos;
+  selecao = backupEnvio.selecao;
+  enviados.forEach(k=>{ arquivos[k].enviado = false; });
+  enviados = [];
+  extrasParaApagar = [];
+  backupEnvio = null;
+  $('nDup').textContent = gruposDup.length;
+  $('nUni').textContent = indicesUnicos.length;
+  $('avisoEnvio').textContent = '↩️ Envio desfeito. Os arquivos voltaram para os Duplicados.';
+  $('btnDesfazer').style.display = 'none';
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('ativa'));
+  const tDup = document.querySelector('.tab[data-aba="dup"]');
+  if(tDup) tDup.classList.add('ativa');
+  abaAtual = 'dup';
+  render();
+});
+
+// ============================================================
+//  BAIXAR COPIA FINAL (.zip) e RELATORIO (.csv)
+// ============================================================
+// le os bytes de um arquivo de forma compativel com todos os navegadores
+async function lerBytes(file){
+  if(typeof file.arrayBuffer === 'function'){
+    try { return new Uint8Array(await file.arrayBuffer()); } catch(e){}
+  }
+  return await new Promise((res,rej)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>res(new Uint8Array(fr.result));
+    fr.onerror = ()=>rej(fr.error || new Error('falha ao ler o arquivo'));
+    fr.readAsArrayBuffer(file);
+  });
+}
+
+function nomeUnico(usados, nome){
+  if(!usados.has(nome)){ usados.add(nome); return nome; }
+  const ponto = nome.lastIndexOf('.');
+  const base = ponto>0 ? nome.slice(0,ponto) : nome;
+  const ext  = ponto>0 ? nome.slice(ponto) : '';
+  let n=1, novo;
+  do { novo = base+'_'+n+ext; n++; } while(usados.has(novo));
+  usados.add(novo); return novo;
+}
+
+let urlCopiaFinal = null;
+
+$('btnBaixar').addEventListener('click', async ()=>{
+  const botao = $('btnBaixar');
+  const status = $('statusBaixar');
+
+  if(typeof JSZip === 'undefined'){
+    status.textContent = '❌ A biblioteca de compactação não foi carregada. Mantenha jszip.min.js na mesma pasta do index.html.';
+    return;
+  }
+
+  // Únicos + duplicados que continuam marcados para manter, sem repetir arquivos.
+  const vistos = new Set();
+  const escolhidos = [];
+  indicesUnicos.forEach(k=>{ if(!vistos.has(k)){ vistos.add(k); escolhidos.push(k); } });
+  gruposDup.forEach(g=>g.itens.forEach(k=>{
+    if(selecao[k] && !vistos.has(k)){ vistos.add(k); escolhidos.push(k); }
+  }));
+
+  if(escolhidos.length===0){
+    status.textContent='⚠️ Nenhum arquivo selecionado para incluir na cópia final.';
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = '⏳ Preparando cópia...';
+  status.textContent = 'Lendo e compactando '+escolhidos.length+' arquivo(s). Aguarde...';
+
+  try{
+    const zip = new JSZip();
+    const pasta = zip.folder('COPIA-FINAL');
+    const usados = new Set();
+
+    for(let i=0; i<escolhidos.length; i++){
+      const k = escolhidos[i];
+      const it = arquivos[k];
+      if(!it || !it.file) throw new Error('Não foi possível localizar um dos arquivos selecionados.');
+      const bytes = await lerBytes(it.file);
+      pasta.file(nomeUnico(usados, it.file.name || ('arquivo-'+(i+1)+'.docx')), bytes);
+      status.textContent = 'Compactando arquivo '+(i+1)+' de '+escolhidos.length+'...';
+    }
+
+    const blob = await zip.generateAsync({
+      type:'blob',
+      compression:'DEFLATE',
+      compressionOptions:{level:6}
+    });
+
+    if(urlCopiaFinal) URL.revokeObjectURL(urlCopiaFinal);
+    urlCopiaFinal = URL.createObjectURL(blob);
+
+    // Exibe um link real para o usuário clicar. Isso evita bloqueios de
+    // download automático após operações assíncronas em alguns navegadores.
+    status.textContent = '';
+    const msg = document.createElement('div');
+    msg.textContent = '✅ Cópia final pronta! '+escolhidos.length+' arquivo(s), '+(blob.size/1024/1024).toFixed(2)+' MB. ';
+    const link = document.createElement('a');
+    link.href = urlCopiaFinal;
+    link.download = 'COPIA-FINAL.zip';
+    link.textContent = '⬇️ CLIQUE AQUI PARA BAIXAR COPIA-FINAL.zip';
+    link.style.cssText = 'display:inline-block;margin-top:8px;padding:12px 16px;background:#168653;color:#fff;font-weight:700;border-radius:8px;text-decoration:none;';
+    msg.appendChild(link);
+    status.appendChild(msg);
+  }catch(e){
+    console.error('Erro ao gerar cópia final:', e);
+    status.textContent = '❌ Erro ao gerar o ZIP: '+(e && e.message ? e.message : e)+'. Tente novamente no Chrome ou Edge.';
+  }finally{
+    botao.disabled = false;
+    botao.textContent = '⬇️ Baixar cópia final (.zip)';
+  }
+});
+
+$('btnCsv').addEventListener('click', ()=>{
+  let linhas = ['Situacao;Grupo;Nome;CPF;Arquivo'];
+  gruposDup.forEach((g,gi)=>{
+    g.itens.forEach(k=>{
+      const it = arquivos[k];
+      const manter = selecao[k] ? 'DUPLICADO-MANTER' : 'DUPLICADO';
+      linhas.push(manter+';'+String(gi+1).padStart(2,'0')+';\"'+it.nome+'\";'+it.cpf+';\"'+it.file.name+'\"');
+    });
+  });
+  indicesUnicos.forEach(k=>{
+    const it = arquivos[k];
+    linhas.push('UNICO;;\"'+it.nome+'\";'+it.cpf+';\"'+it.file.name+'\"');
+  });
+  const blob = new Blob(['\ufeff'+linhas.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  baixarBlob(blob, 'RELATORIO.csv');
+  $('statusBaixar').textContent = '✅ Relatório RELATORIO.csv baixado.';
+});
+
+function baixarBlob(blob, nome){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nome;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
+// ============================================================
+//  BOTOES / DRAG-DROP
+// ============================================================
+$('btnPasta').addEventListener('click', ()=>$('inpPasta').click());
+$('btnArquivos').addEventListener('click', ()=>$('inpArquivos').click());
+$('inpPasta').addEventListener('change', e=>receberFiles(e.target.files, true));
+$('inpArquivos').addEventListener('change', e=>receberFiles(e.target.files, false));
+$('btnLimpar').addEventListener('click', ()=>{
+  arquivos.length=0; gruposDup=[]; indicesUnicos=[]; selecao={};
+  enviados=[]; backupEnvio=null; extrasParaApagar=[];
+  $('boxResultado').classList.add('hide'); $('boxBaixar').classList.add('hide');
+  $('inpPasta').value=''; $('inpArquivos').value='';
+});
+
+const drop = $('drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hover');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hover');}));
+drop.addEventListener('click', ()=>$('inpArquivos').click());
+drop.addEventListener('drop', async e=>{
+  const items = e.dataTransfer.items;
+  if(items && items.length && items[0].webkitGetAsEntry){
+    const files = [];
+    const percorrer = (entry) => new Promise(res=>{
+      if(entry.isFile){ entry.file(f=>{files.push(f);res();}); }
+      else if(entry.isDirectory){
+        const rd = entry.createReader();
+        rd.readEntries(async ents=>{ for(const en of ents){ await percorrer(en); } res(); });
+      } else res();
+    });
+    const roots = [];
+    for(const it of items){ const en = it.webkitGetAsEntry(); if(en) roots.push(en); }
+    for(const r of roots){ await percorrer(r); }
+    receberFiles(files, true);
+  } else {
+    receberFiles(e.dataTransfer.files, false);
+  }
+});
+</script>
+</body>
+</html>
