@@ -19,10 +19,10 @@
         z-index: 9999;
         display: block;
         box-sizing: border-box;
-        /* Fundo azul IGUAL às bordas do próprio vídeo (topo = #2bb2f9, base =
-           #038cf9), para que o espaço acima/abaixo do vídeo não tenha emenda
-           nem moldura — fica tudo um azul só, contínuo com o vídeo. */
-        background: linear-gradient(180deg, #3f9ff7 0%, #4ba3f6 45%, #5fb0f4 100%);
+        /* Fundo claro IGUAL a borda do proprio video (~#F4F5F8), para que a
+           margem acima/abaixo/dos lados do video (quando a tela nao e 16:9) se
+           funda com o video: sem faixa azul e SEM cortar a logo de Delfinopolis. */
+        background: #F4F5F8;
         overflow: hidden;
         transition: opacity .7s ease, visibility .7s ease;
         will-change: opacity;
@@ -289,7 +289,7 @@
         .splash-progress.indeterminate .splash-fill { animation: none; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index.js?v=avatar4"></script>
+    <script type="module" crossorigin src="/assets/index.js?v=avatar9"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor.js">
     <link rel="modulepreload" crossorigin href="/assets/charts.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase.js">
