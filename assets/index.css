@@ -487,17 +487,19 @@
  .cras-profile-sub{font-size:8px!important}
 }
 
-/* CORRECAO FINAL: avatar ocupa todo o espaco interno do circulo */
+/* CORRECAO: preservar o componente Mi e preencher somente a area interna do avatar.
+   O primeiro span e o componente de avatar; a imagem e filha direta dele. */
 .cras-profile-avatar-wrap > span:first-child{
   box-sizing:border-box!important;
-  display:flex!important;
-  flex:1 1 100%!important;
-  width:100%!important;
-  min-width:100%!important;
-  max-width:100%!important;
-  height:100%!important;
-  min-height:100%!important;
-  max-height:100%!important;
+  display:inline-flex!important;
+  position:relative!important;
+  flex:0 0 38px!important;
+  width:38px!important;
+  min-width:38px!important;
+  max-width:38px!important;
+  height:38px!important;
+  min-height:38px!important;
+  max-height:38px!important;
   padding:0!important;
   margin:0!important;
   overflow:hidden!important;
@@ -506,6 +508,7 @@
 .cras-profile-avatar-wrap > span:first-child > img{
   display:block!important;
   box-sizing:border-box!important;
+  flex:0 0 100%!important;
   width:100%!important;
   min-width:100%!important;
   max-width:100%!important;
@@ -520,7 +523,13 @@
   object-position:center center!important;
 }
 .cras-profile-avatar-wrap > span:first-child > span{
-  width:100%!important;
-  height:100%!important;
+  box-sizing:border-box!important;
+  position:absolute!important;
+  right:0!important;
+  bottom:0!important;
+  width:10px!important;
+  height:10px!important;
+  min-width:10px!important;
+  min-height:10px!important;
   border-radius:50%!important;
 }
