@@ -20,3 +20,109 @@
 .cras-profile-btn.cras-logout:hover{background:#FFF1F2;color:#E11D48}
 .cras-logo-top{height:44px!important;width:auto!important;max-width:100%!important;object-fit:contain!important;display:block}
 .cras-logo-collapsed{height:36px!important;width:auto!important;max-width:100%!important;object-fit:contain!important;display:block}
+
+
+/* ===== Perfil do usuário: visual baseado na referência enviada ===== */
+.cras-profile-strip{
+  width:100%!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  padding:9px!important;
+  background:linear-gradient(135deg,#f8fafc 0%,#eef3f8 100%)!important;
+  border:1px solid rgba(226,232,240,.9)!important;
+  border-radius:22px!important;
+  box-shadow:0 8px 22px rgba(31,48,67,.10), inset 0 1px 0 rgba(255,255,255,.9)!important;
+}
+.cras-profile-main{
+  min-width:0!important;
+  flex:1 1 auto!important;
+  gap:9px!important;
+  padding:8px 7px!important;
+  background:rgba(255,255,255,.94)!important;
+  border:1px solid #edf1f5!important;
+  border-radius:20px!important;
+  box-shadow:0 5px 15px rgba(31,48,67,.07)!important;
+}
+.cras-profile-main:hover{
+  border-color:#a7f3d0!important;
+  box-shadow:0 7px 18px rgba(16,185,129,.12)!important;
+}
+.cras-profile-avatar-wrap{
+  width:62px!important;height:62px!important;
+  border:4px solid #fff!important;
+  border-radius:50%!important;
+  box-shadow:0 3px 10px rgba(15,23,42,.15)!important;
+}
+.cras-profile-avatar-wrap img,
+.cras-profile-avatar-wrap > span:first-child{
+  width:54px!important;height:54px!important;
+  border-radius:50%!important;object-fit:cover!important;
+}
+.cras-profile-dot{
+  width:15px!important;height:15px!important;
+  right:-1px!important;bottom:0!important;
+  background:#22e65b!important;
+  border:2px solid #fff!important;
+  box-shadow:0 0 0 3px rgba(34,230,91,.16),0 0 12px rgba(34,230,91,.55)!important;
+}
+.cras-profile-cam{border-radius:50%!important}
+.cras-profile-name{
+  max-width:100%!important;
+  font-size:15px!important;
+  font-weight:750!important;
+  color:#101d2b!important;
+  line-height:1.15!important;
+  white-space:normal!important;
+  display:-webkit-box!important;
+  -webkit-line-clamp:2!important;
+  -webkit-box-orient:vertical!important;
+  overflow:hidden!important;
+  text-align:left!important;
+}
+.cras-profile-sub{
+  max-width:100%!important;
+  margin-top:4px!important;
+  font-size:11px!important;
+  font-weight:650!important;
+  color:#07875f!important;
+  line-height:1.2!important;
+  white-space:normal!important;
+  text-align:left!important;
+}
+.cras-profile-actions{
+  gap:6px!important;
+  flex:0 0 auto!important;
+}
+.cras-profile-btn{
+  width:39px!important;height:59px!important;
+  border-radius:18px!important;
+  background:linear-gradient(180deg,#fff 0%,#f7f9fc 100%)!important;
+  border:1px solid #edf1f5!important;
+  color:#596575!important;
+  box-shadow:0 5px 13px rgba(31,48,67,.10)!important;
+}
+.cras-profile-btn svg{width:22px!important;height:22px!important}
+.cras-profile-btn:hover{
+  transform:translateY(-1px)!important;
+  background:#fff!important;
+  color:#087b59!important;
+  box-shadow:0 7px 16px rgba(31,48,67,.14)!important;
+}
+.cras-profile-btn.cras-logout:hover{
+  color:#e11d48!important;background:#fff7f8!important;
+}
+@media(max-width:280px){
+  .cras-profile-strip{gap:5px!important;padding:6px!important;border-radius:17px!important}
+  .cras-profile-main{gap:6px!important;padding:6px 5px!important;border-radius:15px!important}
+  .cras-profile-avatar-wrap{width:50px!important;height:50px!important;border-width:3px!important}
+  .cras-profile-avatar-wrap img,.cras-profile-avatar-wrap > span:first-child{width:44px!important;height:44px!important}
+  .cras-profile-name{font-size:12px!important}
+  .cras-profile-sub{font-size:9px!important}
+  .cras-profile-btn{width:31px!important;height:48px!important;border-radius:13px!important}
+  .cras-profile-btn svg{width:18px!important;height:18px!important}
+}
+@media(prefers-reduced-motion:no-preference){
+  .cras-profile-main,.cras-profile-btn{transition:all .2s ease!important}
+}
