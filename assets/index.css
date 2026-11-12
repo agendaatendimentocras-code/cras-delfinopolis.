@@ -486,3 +486,41 @@
  .cras-profile-name{font-size:10px!important}
  .cras-profile-sub{font-size:8px!important}
 }
+
+/* CORRECAO FINAL: avatar ocupa todo o espaco interno do circulo */
+.cras-profile-avatar-wrap > span:first-child{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex:1 1 100%!important;
+  width:100%!important;
+  min-width:100%!important;
+  max-width:100%!important;
+  height:100%!important;
+  min-height:100%!important;
+  max-height:100%!important;
+  padding:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+  border-radius:50%!important;
+}
+.cras-profile-avatar-wrap > span:first-child > img{
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-width:100%!important;
+  max-width:100%!important;
+  height:100%!important;
+  min-height:100%!important;
+  max-height:100%!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+}
+.cras-profile-avatar-wrap > span:first-child > span{
+  width:100%!important;
+  height:100%!important;
+  border-radius:50%!important;
+}
