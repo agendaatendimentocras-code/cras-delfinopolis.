@@ -108,3 +108,146 @@
   .cras-perfil-card{padding:11px 10px;gap:10px}
   .cras-perfil-acoes{gap:6px}
 }
+
+
+/* ===== Ajustes finais do menu lateral e cartão do usuário ===== */
+.cras-logo-top {
+  height: 38px !important;
+  max-width: 48px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  background: transparent !important;
+  display: block;
+}
+.cras-logo-collapsed {
+  height: 31px !important;
+  max-width: 34px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  background: transparent !important;
+}
+aside.fixed > div:first-child {
+  box-sizing: border-box;
+  min-height: 70px;
+  padding: 10px 9px !important;
+  gap: 8px !important;
+  align-items: center;
+}
+aside.fixed > div:first-child > div:first-child {
+  width: 48px !important;
+  height: 48px !important;
+  flex: 0 0 48px;
+  overflow: visible !important;
+  background: transparent !important;
+}
+aside.fixed > div:first-child h1 {
+  font-size: 13px !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.25px;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+aside.fixed > div:first-child p {
+  font-size: 9px !important;
+  line-height: 1.15 !important;
+  white-space: normal;
+  margin-top: 3px !important;
+}
+aside.fixed > div:first-child > button {
+  flex: 0 0 auto;
+  min-width: 24px;
+  min-height: 30px;
+}
+.cras-perfil-card {
+  display: flex;
+  align-items: center;
+  gap: 6px !important;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 9px !important;
+  border-radius: 16px !important;
+}
+.cras-perfil-identidade {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 8px;
+}
+.cras-perfil-avatar-botao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  box-sizing: border-box !important;
+  overflow: hidden;
+  border: 2px solid #e5f1e9;
+  background: #f2f7f4;
+}
+.cras-perfil-avatar-botao > * {
+  max-width: 100%;
+  max-height: 100%;
+}
+.cras-perfil-texto {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  gap: 2px !important;
+  overflow: hidden;
+}
+.cras-perfil-nome {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  max-width: 100%;
+  white-space: normal !important;
+  overflow: hidden !important;
+  overflow-wrap: anywhere;
+  text-overflow: clip !important;
+  font-size: 12px !important;
+  line-height: 1.18 !important;
+  font-weight: 750;
+}
+.cras-perfil-dica {
+  display: block;
+  max-width: 100%;
+  white-space: normal !important;
+  overflow: hidden;
+  text-overflow: clip;
+  font-size: 9px !important;
+  line-height: 1.15 !important;
+  margin-top: 1px !important;
+}
+.cras-perfil-acoes {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px !important;
+}
+.cras-acao-botao {
+  width: 29px !important;
+  height: 32px !important;
+  min-width: 29px;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 3px rgba(24,39,60,.09);
+}
+@media (max-width: 767px) {
+  .cras-perfil-card { padding: 9px 8px !important; gap: 6px !important; }
+  .cras-perfil-identidade { gap: 7px; }
+  .cras-perfil-avatar-botao { flex-basis: 42px; width: 42px !important; height: 42px !important; min-width: 42px; min-height: 42px; }
+  .cras-perfil-nome { font-size: 11.5px !important; }
+  .cras-perfil-dica { font-size: 8.5px !important; }
+  .cras-acao-botao { width: 27px !important; min-width: 27px; height: 30px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cras-acao-botao, .cras-perfil-avatar-botao { transition: none !important; }
+}
