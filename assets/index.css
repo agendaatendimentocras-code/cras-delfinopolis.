@@ -83,3 +83,28 @@
 @media (prefers-reduced-motion:reduce){
   .cras-perfil-card,.cras-perfil-avatar-botao,.cras-acao-botao{transition:none}
 }
+
+/* ===== AJUSTE: nome completo no cartao de perfil + textos do topo ===== */
+.cras-perfil-nome{
+  font-size:13px;
+  line-height:1.2;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  word-break:break-word;
+  letter-spacing:-.2px;
+}
+.cras-perfil-dica{font-size:10.5px;margin-top:2px}
+.cras-perfil-texto{gap:1px}
+.cras-perfil-card{padding:13px 12px;gap:12px}
+.cras-perfil-acoes{gap:7px;flex-shrink:0}
+@media (max-width:767px){
+  .cras-perfil-nome{font-size:12.5px}
+  .cras-perfil-dica{font-size:10px}
+  .cras-perfil-card{padding:11px 10px;gap:10px}
+  .cras-perfil-acoes{gap:6px}
+}
