@@ -251,3 +251,64 @@ aside.fixed > div:first-child > button {
 @media (prefers-reduced-motion: reduce) {
   .cras-acao-botao, .cras-perfil-avatar-botao { transition: none !important; }
 }
+
+/* ===== Refinamento do menu: mais espaço para o nome e ações à direita ===== */
+aside.fixed > div:first-child h1 {
+  font-size: 10.5px !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.15px !important;
+}
+aside.fixed > div:first-child p {
+  font-size: 8px !important;
+  line-height: 1.1 !important;
+  margin-top: 2px !important;
+}
+.cras-perfil-card {
+  gap: 4px !important;
+  padding: 9px 5px 9px 8px !important;
+}
+.cras-perfil-identidade {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  gap: 7px !important;
+}
+.cras-perfil-avatar-botao {
+  flex: 0 0 40px !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+}
+.cras-perfil-texto {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+}
+.cras-perfil-nome {
+  font-size: 11.5px !important;
+  line-height: 1.2 !important;
+}
+.cras-perfil-dica {
+  font-size: 8.5px !important;
+  line-height: 1.1 !important;
+}
+.cras-perfil-acoes {
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  gap: 4px !important;
+}
+.cras-acao-botao {
+  width: 26px !important;
+  min-width: 26px !important;
+  height: 29px !important;
+  border-radius: 8px !important;
+}
+@media (max-width: 767px) {
+  .cras-perfil-card { padding: 8px 4px 8px 7px !important; gap: 3px !important; }
+  .cras-perfil-avatar-botao { flex-basis: 38px !important; width: 38px !important; height: 38px !important; min-width: 38px !important; min-height: 38px !important; }
+  .cras-perfil-identidade { gap: 6px !important; }
+  .cras-perfil-nome { font-size: 11px !important; }
+  .cras-perfil-dica { font-size: 8px !important; }
+  .cras-perfil-acoes { gap: 3px !important; }
+  .cras-acao-botao { width: 25px !important; min-width: 25px !important; height: 28px !important; }
+}
