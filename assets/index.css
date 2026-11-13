@@ -312,3 +312,31 @@ aside.fixed > div:first-child p {
   .cras-perfil-acoes { gap: 3px !important; }
   .cras-acao-botao { width: 25px !important; min-width: 25px !important; height: 28px !important; }
 }
+
+
+/* Calendário unificado CRAS — componente acessível e responsivo */
+.cras-date-field{position:relative;min-width:0}
+.cras-date-anchor{position:relative;width:100%}
+.cras-date-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer;background:#fff!important;color:#334155!important;border:1px solid #cbd5e1!important;border-radius:10px!important;min-height:46px;padding:10px 13px!important;box-shadow:0 1px 2px rgba(15,23,42,.04);font:inherit}
+.cras-date-trigger:hover{border-color:#25638a!important;box-shadow:0 0 0 3px rgba(37,99,138,.08)}
+.cras-date-trigger:focus-visible{outline:3px solid rgba(37,99,138,.2);outline-offset:1px}
+.cras-date-placeholder{color:#94a3b8}
+.cras-date-icon{font-size:19px;color:#25638a;line-height:1}
+.cras-date-popover{position:absolute;z-index:1000;top:calc(100% + 8px);left:0;width:min(320px,calc(100vw - 32px));padding:14px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 18px 48px rgba(15,23,42,.2);color:#1e293b}
+.cras-date-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
+.cras-date-head strong{text-transform:capitalize;font-size:14px;font-weight:700;color:#174f72}
+.cras-date-head button{width:34px;height:34px;border:0;border-radius:9px;background:#f1f5f9;color:#174f72;font-size:25px;line-height:1;cursor:pointer}
+.cras-date-head button:hover{background:#e0edf4}
+.cras-date-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cras-date-weekday{height:30px;display:grid;place-items:center;color:#64748b;font-size:11px;font-weight:700}
+.cras-date-day{height:36px;border:0;border-radius:9px;background:transparent;color:#334155;font-size:13px;font-weight:500;cursor:pointer}
+.cras-date-day:hover:not(:disabled){background:#eaf2f7;color:#174f72}
+.cras-date-day.is-outside{color:#b8c1cc}
+.cras-date-day.is-selected{background:#17618a;color:#fff;font-weight:700;box-shadow:0 2px 6px rgba(23,97,138,.25)}
+.cras-date-day.is-today:not(.is-selected){box-shadow:inset 0 0 0 1px #17618a;color:#17618a;font-weight:700}
+.cras-date-day:disabled{opacity:.28;cursor:not-allowed;text-decoration:line-through}
+.cras-date-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #edf1f5;margin-top:12px;padding-top:11px}
+.cras-date-textbtn{border:0;background:transparent;color:#17618a;font-size:12px;font-weight:600;padding:7px 5px;cursor:pointer}
+.cras-date-confirm{border:0;border-radius:8px;background:#17618a;color:#fff;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer}
+.cras-date-confirm:hover{background:#124d70}
+@media(max-width:480px){.cras-date-popover{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,calc(100vw - 28px));z-index:2000}.cras-date-day{height:39px}}
