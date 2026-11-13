@@ -21,3 +21,65 @@
 
 .cras-profile-cam{position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;border-radius:9999px;background:#16A34A;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 2px rgba(16,24,40,.2);pointer-events:none}
 .cras-profile-avatar-wrap{border-radius:9999px;overflow:visible}
+
+/* ===== CARD DE PERFIL (novo visual, baseado no card-perfil.html) ===== */
+.cras-perfil-card{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 14px;
+  background:#f9fafb;
+  border:1px solid #eaeef1;
+  border-radius:22px;
+  box-shadow:0 1px 2px rgba(24,39,60,.05),0 6px 18px rgba(24,39,60,.07);
+  transition:box-shadow .2s ease;
+}
+.cras-perfil-avatar-botao{
+  position:relative;flex:0 0 auto;
+  width:56px;height:56px;padding:0;
+  border:2.5px solid #f2f7f4;background:#f2f7f4;
+  border-radius:50%;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:border-color .18s ease,transform .18s ease;
+  box-sizing:content-box;
+}
+.cras-perfil-avatar-botao:hover{border-color:#d9eae0;transform:scale(1.03)}
+.cras-perfil-avatar-botao:active{transform:scale(.97)}
+.cras-perfil-avatar-botao:focus-visible{outline:2px solid #187a4c;outline-offset:3px}
+.cras-perfil-texto{
+  flex:1 1 auto;min-width:0;
+  display:flex;flex-direction:column;gap:3px;text-align:left;
+}
+.cras-perfil-nome{
+  margin:0;font-size:14px;line-height:1.25;font-weight:700;
+  color:#101a17;letter-spacing:-.2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cras-perfil-dica{
+  margin:0;font-size:11.5px;line-height:1.3;font-weight:600;color:#187a4c;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  cursor:pointer;
+}
+.cras-perfil-acoes{flex:0 0 auto;display:flex;align-items:center;gap:8px}
+.cras-acao-botao{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:38px;padding:0;
+  border:1px solid rgba(255,255,255,.9);border-radius:999px;
+  background:linear-gradient(180deg,#ffffff 0%,#f6f8f7 100%);
+  color:#445652;cursor:pointer;
+  box-shadow:0 1px 2px rgba(24,39,60,.10),0 4px 10px rgba(24,39,60,.10);
+  transition:background .16s ease,color .16s ease,transform .16s ease,box-shadow .16s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.cras-acao-botao:hover{background:#f1f5f3;color:#16211d;transform:translateY(-1px);box-shadow:0 3px 8px rgba(22,45,36,.1)}
+.cras-acao-botao:active{transform:translateY(0)}
+.cras-acao-botao:focus-visible{outline:2px solid #187a4c;outline-offset:2px}
+.cras-acao-botao.cras-acao-sair:hover{background:#fdf1ef;color:#b0453a}
+@media (max-width:767px){
+  .cras-perfil-card{gap:10px;padding:11px 12px;border-radius:18px}
+  .cras-perfil-avatar-botao{width:46px;height:46px}
+  .cras-perfil-nome{font-size:13px}
+  .cras-perfil-dica{font-size:10.5px}
+  .cras-acao-botao{width:30px;height:34px}
+}
+@media (prefers-reduced-motion:reduce){
+  .cras-perfil-card,.cras-perfil-avatar-botao,.cras-acao-botao{transition:none}
+}
