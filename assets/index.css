@@ -108,3 +108,16 @@
   .cras-perfil-card{padding:11px 10px;gap:10px}
   .cras-perfil-acoes{gap:6px}
 }
+
+/* ===== AJUSTE PEDIDO: botoes Atualizar/Sair colados na direita + nome com mais espaco ===== */
+.cras-perfil-card{gap:10px;padding:12px 10px 12px 12px}
+.cras-perfil-texto{flex:1 1 auto;min-width:0;padding-right:2px}
+.cras-perfil-nome{font-size:11.5px;line-height:1.22;letter-spacing:0;font-weight:700}
+.cras-perfil-acoes{margin-left:auto;flex:0 0 auto;gap:5px;padding-right:0}
+.cras-acao-botao{width:29px;height:33px}
+@media (max-width:767px){
+  .cras-perfil-card{padding:10px 8px 10px 10px;gap:9px}
+  .cras-perfil-nome{font-size:11px}
+  .cras-acao-botao{width:27px;height:31px}
+  .cras-perfil-acoes{gap:4px}
+}
