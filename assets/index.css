@@ -121,3 +121,11 @@
   .cras-acao-botao{width:27px;height:31px}
   .cras-perfil-acoes{gap:4px}
 }
+
+/* ===== AJUSTE: cartao de perfil conforme referencia (botoes na mesma linha do nome) ===== */
+.cras-perfil-card{gap:8px;padding:12px 10px 12px 12px;align-items:center}
+.cras-perfil-texto{flex:1 1 auto;min-width:0;gap:0}
+.cras-perfil-nome{font-size:12.5px;line-height:1.2;font-weight:700;white-space:normal;word-break:break-word}
+.cras-perfil-dica{font-size:10px;line-height:1.2;margin-top:2px}
+.cras-perfil-acoes{margin-left:auto;flex:0 0 auto;gap:6px;align-self:center}
+.cras-acao-botao{width:30px;height:34px}
