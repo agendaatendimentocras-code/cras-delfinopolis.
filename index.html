@@ -22,7 +22,7 @@
         /* Fundo claro IGUAL a borda do proprio video (~#F4F5F8), para que a
            margem acima/abaixo/dos lados do video (quando a tela nao e 16:9) se
            funda com o video: sem faixa azul e SEM cortar a logo de Delfinopolis. */
-        background: #F4F5F8;
+        background: #f4f5f8;
         overflow: hidden;
         transition: opacity .7s ease, visibility .7s ease;
         will-change: opacity;
@@ -46,10 +46,15 @@
         inset: 0;
         width: 100%;
         height: 100%;
-        -o-object-fit: contain;
-           object-fit: contain;           /* mostra o video inteiro, sem cortar a logo de Delfinopolis */
+        -o-object-fit: cover;
+           object-fit: cover;             /* preenche TODA a tela: sem faixas nas laterais */
         -o-object-position: center center;
            object-position: center center; /* ilustração centralizada */
+        /* Em telas muito largas (ex.: monitor 16:9 achatado) o recorte do cover
+           viria da lateral direita, onde fica a logo da Prefeitura. Este recorte
+           parcial apenas a desloca ~2,3% para a esquerda, mantendo-a inteira. */
+        -webkit-clip-path: inset(0 2.3% 0 0);
+           clip-path: inset(0 2.3% 0 0);
         display: block;
         background: transparent;
         border: 0;
@@ -309,9 +314,9 @@
           loop
           playsinline
           preload="auto"
-          
+          poster="/splash-poster.jpg?v=v148"
         >
-          <source src="/init-video-cras-novo.mp4?v=2" type="video/mp4" />
+          <source src="/init-video-cras-novo.mp4?v=v148" type="video/mp4" />
         </video>
         
         
@@ -663,6 +668,20 @@
       .cras-dp-day.is-sel { background: #16a34a; color: #fff; font-weight: 700; border-color: #16a34a; }
       .cras-dp-day.is-sel:hover { background: #15803d; }
       .cras-dp-day:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(22,163,74,.25); }
+      /* marcas de vagas disponiveis (so no calendario de Remarcar/Agendar) */
+      .cras-dp-day.has-vagas::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: 3px;
+        width: 5px;
+        height: 5px;
+        margin-left: -2.5px;
+        border-radius: 999px;
+        background: #16a34a;
+      }
+      .cras-dp-day.is-sel.has-vagas::after { background: #ffffff; }
+      .cras-dp-day.is-vagas-off { opacity: .55; }
       .cras-dp-foot {
         display: flex;
         align-items: center;
@@ -684,6 +703,8 @@
       }
       .cras-dp-hoje:hover { background: #f9fafb; }
       .cras-dp-hoje:disabled { opacity: .4; cursor: default; }
+      .cras-dp-legenda { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #15803d; font-weight: 600; }
+      .cras-dp-legenda i { width: 6px; height: 6px; border-radius: 999px; background: #16a34a; display: inline-block; }
       .cras-dp-limite { font-size: 10px; color: #9ca3af; text-align: right; line-height: 1.25; }
       @media (max-width: 480px) {
         .cras-dp-pop { width: calc(100vw - 12px); padding: 8px; }
@@ -709,6 +730,68 @@
           return isNaN(d.getTime()) ? null : d;
         }
         function hojeIso() { return iso(new Date()); }
+        /* ---- vagas por dia (opcional, so depois de informado) ---- */
+        var vagasCfg = null, vagasFila = null;
+        function carregarVagas() {
+          if (vagasCfg !== null) return;
+          if (vagasFila) return;
+          vagasCfg = false;
+          try {
+            var url = '', key = '';
+            var sc = document.querySelector('script[src*="/assets/index.js"]');
+            var m = /^https?:/.test(location.protocol) ? null : null;
+            url = (window.__CRAS_SB_URL || '') ; key = (window.__CRAS_SB_KEY || '');
+            if (!url || !key) {
+              try {
+                var keys = Object.keys(window.localStorage || {});
+                for (var i = 0; i < keys.length; i++) {
+                  if (!/supabase\.co/.test(keys[i])) continue;
+                  var raw = window.localStorage.getItem(keys[i]);
+                  var o = JSON.parse(raw);
+                  if (o && o.supabaseUrl && o.supabaseKey) { url = o.supabaseUrl; key = o.supabaseKey; break; }
+                }
+              } catch (e) {}
+            }
+            if (!url || !key) { vagasCfg = {}; return; }
+            vagasFila = fetch(url.replace(/\/$/, '') + '/rest/v1/configuracoes?select=chave,valor&chave=in.(vagas_padrao,vagas_distrito,dias_distrito,vagas_dia_0,vagas_dia_1,vagas_dia_2,vagas_dia_3,vagas_dia_4,vagas_dia_5,vagas_dia_6)', { headers: { apikey: key, Authorization: 'Bearer ' + key } })
+              .then(function (r) { return r.json(); })
+              .then(function (rows) {
+                var cfg = {};
+                (rows || []).forEach(function (r) { cfg[r.chave] = r.valor; });
+                vagasCfg = cfg;
+                if (pop && wrapAtual && wrapAtual.querySelector('input[data-cras-vagas="1"]')) {
+                  var inp = wrapAtual.querySelector('input[type="date"]');
+                  marcarVagas(inp);
+                }
+              })
+              .catch(function () { vagasCfg = {}; });
+          } catch (e) { vagasCfg = {}; }
+        }
+        function totalVagas(dia) {
+          var cfg = vagasCfg || {};
+          var d = parseIso(dia);
+          if (!d) return 0;
+          var wd = d.getDay();
+          var porDia = cfg['vagas_dia_' + wd];
+          if (porDia !== undefined && porDia !== '') return parseInt(porDia, 10) || 0;
+          var padrao = parseInt(cfg.vagas_padrao || '', 10) || 20;
+          var distrito = (cfg.dias_distrito || '').split(',').map(function (x) { return x.trim(); });
+          if (distrito.indexOf(String(wd)) !== -1) return parseInt(cfg.vagas_distrito || '', 10) || 15;
+          return padrao;
+        }
+        function marcarVagas(inp) {
+          if (!pop || !inp || inp.getAttribute('data-cras-vagas') !== '1') return;
+          var ocupados = window.__CRAS_OCUPADO_dados || null;
+          if (!ocupados || !vagasCfg) return;
+          var dias = pop.querySelectorAll('.cras-dp-day[data-dia]');
+          for (var i = 0; i < dias.length; i++) {
+            var el = dias[i], k = el.getAttribute('data-dia');
+            var restam = totalVagas(k) - (ocupados[k] || 0);
+            el.classList.remove('has-vagas'); el.classList.remove('is-vagas-off');
+            if (restam > 0) el.classList.add('has-vagas');
+            else el.classList.add('is-vagas-off');
+          }
+        }
         function limite(inp, attr) {
           var v = inp.getAttribute(attr);
           return parseIso(v) ? v : null;
@@ -825,10 +908,15 @@
           html += '</div>';
           html += '<div class="cras-dp-foot">';
           html += '<button type="button" class="cras-dp-hoje" data-hoje="1">Hoje</button>';
+          if (inp.getAttribute('data-cras-vagas') === '1') html += '<span class="cras-dp-legenda"><i></i> dia com vaga</span>';
           html += '<span class="cras-dp-limite">' + (min && max ? 'De ' + min.split('-').reverse().join('/') + ' a ' + max.split('-').reverse().join('/') : min ? 'A partir de ' + min.split('-').reverse().join('/') : max ? 'Até ' + max.split('-').reverse().join('/') : '') + '</span>';
           html += '</div>';
           pop.innerHTML = html;
           posicionar(wrap);
+          if (inp.getAttribute('data-cras-vagas') === '1') {
+            if (!vagasCfg) carregarVagas();
+            marcarVagas(inp);
+          }
         }
         function escolher(inp, k) {
           var min = limite(inp, 'min'), max = limite(inp, 'max');
