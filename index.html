@@ -295,11 +295,11 @@
         .splash-progress.indeterminate .splash-fill { animation: none; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index.js?v=v166"></script>
+    <script type="module" crossorigin src="/assets/index.js?v=v167"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor.js">
     <link rel="modulepreload" crossorigin href="/assets/charts.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase.js">
-    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v166">
+    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v167">
   </head>
   <body>
     <!-- Tela de abertura: logotipo original preservado + barra de progresso REAL.
@@ -1013,7 +1013,7 @@
     </script>
     <!-- O pacote principal do app carrega DEPOIS que a API da tela de abertura
          (window.__crasSplash) já está definida acima, evitando a tela presa em 0%. -->
-    <script src="/assets/supabase.js?v=v166" type="module"></script>
+    <script src="/assets/supabase.js?v=v167" type="module"></script>
     <script>
 /* CRAS Delfinópolis — Encaixe (v164)
    Módulo complementar: NÃO substitui nenhuma tela do sistema.
@@ -1178,7 +1178,22 @@
       return false;
     }
     if (hbtn.parentNode !== slot) slot.appendChild(hbtn);
+    if (route === 'atendimentos') matchField(slot);
+    else { hbtn.style.height = ''; hbtn.style.paddingTop = ''; hbtn.style.paddingBottom = ''; }
     return true;
+  }
+
+  /* o botão fica com a mesma altura do campo de data (padronizado) */
+  function matchField(slot) {
+    if (!hbtn) return;
+    var inp = slot.querySelector('input');
+    if (!inp) return;
+    var h = Math.round(inp.getBoundingClientRect().height);
+    if (h > 24 && h < 80) {
+      hbtn.style.height = h + 'px';
+      hbtn.style.paddingTop = '0';
+      hbtn.style.paddingBottom = '0';
+    }
   }
 
   function syncButton() {
@@ -1533,7 +1548,7 @@
     modal.querySelector('#crx-savelimit').addEventListener('click', saveLimit);
     var ver = document.createElement('span');
     ver.className = 'crx-ver';
-    ver.textContent = 'Encaixe v166';
+    ver.textContent = 'Encaixe v167';
     ver.style.cssText = 'font-size:10px;color:#94a3b8;font-weight:700;margin-right:8px;letter-spacing:.3px';
     modal.querySelector('#crx-admin').appendChild(ver);
     applyProfile();
@@ -2099,5 +2114,533 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
 })();
 
     </script>
+    <script>
+/* CRAS Delfinópolis — Regra do dia exclusivo de Benefícios BPC (v167)
+   - Ao agendar um atendimento do tipo BPC, o dia passa a ser exclusivo desse serviço
+   - Nos demais tipos, o dia fica bloqueado (a exceção é o Encaixe)
+   - Aba "Benefícios BPC" em Configurações: liga/desliga a regra, escolhe o tipo e o limite por dia
+*/
+(function () {
+  'use strict';
+  if (window.__crasBpcLoaded) return;
+  window.__crasBpcLoaded = true;
+
+  var SB_URL = 'https://tizruuquhhpmykkjsmpn.supabase.co';
+  var SB_KEY = 'sb_publishable_l-COxHSUAoiOf7PMXAb3SQ_ZWZk1v1w';
+  var VERSION = 'v167';
+
+  var cfg = { enabled: true, limit: 4, tipoId: '' };
+  var tipos = null, tiposAt = 0;
+  var dayCache = {};
+  var activeTab = false, tick = null;
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function todayStr() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function brDate(iso) {
+    var p = String(iso || '').split('-');
+    if (p.length !== 3) return iso;
+    return p[2] + '/' + p[1] + '/' + p[0];
+  }
+  function norm(s) {
+    return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+  function isEncaixe(obs) { return /\[ENCAIXE\]/i.test(String(obs || '')); }
+  function isBpcName(n) { var t = norm(n); return t.indexOf('bpc') >= 0 || t.indexOf('beneficio') >= 0; }
+  function accessToken() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || !/-auth-token$/.test(k)) continue;
+        var raw = localStorage.getItem(k), o = null;
+        try { o = JSON.parse(raw); } catch (e) { o = null; }
+        if (o && o.access_token) return o.access_token;
+        if (o && o.currentSession && o.currentSession.access_token) return o.currentSession.access_token;
+      }
+    } catch (e) {}
+    return '';
+  }
+  function api(path, opt) {
+    opt = opt || {};
+    var h = { apikey: SB_KEY };
+    var tk = accessToken();
+    if (tk) h.Authorization = 'Bearer ' + tk;
+    if (opt.prefer) h.Prefer = opt.prefer;
+    if (opt.body !== undefined) h['Content-Type'] = 'application/json';
+    return fetch(SB_URL + path, {
+      method: opt.method || 'GET',
+      headers: h,
+      body: opt.body === undefined ? undefined : JSON.stringify(opt.body),
+      cache: 'no-store',
+      credentials: 'omit'
+    }).then(function (r) {
+      return r.text().then(function (txt) {
+        var data = null;
+        if (txt) { try { data = JSON.parse(txt); } catch (e) { data = txt; } }
+        if (!r.ok) {
+          var msg = (data && (data.message || data.hint || data.error_description)) || ('Falha de comunicação (' + r.status + ')');
+          var err = new Error(msg); err.status = r.status; throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  var css = ''
+    + '.crx-bpcn{margin-top:8px;border-radius:9px;padding:9px 11px;font-size:12px;font-weight:600;line-height:1.45;border:1px solid transparent}'
+    + '.crx-bpcn.info{background:#eff6ff;border-color:#c7dbf5;color:#1d4ed8}'
+    + '.crx-bpcn.warn{background:#fff7ed;border-color:#fed7aa;color:#9a3412}'
+    + '.crx-bpcn.ok{background:#f0fdf4;border-color:#bbf7d0;color:#166534}'
+    + '.crx-bpc-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:2147483600;background:#b91c1c;color:#fff;font-size:13px;font-weight:600;padding:13px 18px;border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.28);max-width:min(92vw,620px);line-height:1.45}'
+    + '.crx-bpc-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #eef2f7}'
+    + '.crx-bpc-row:last-of-type{border-bottom:0}'
+    + '.crx-bpc-row .lab{flex:1;min-width:0}.crx-bpc-row .lab b{display:block;font-size:14px;color:#334155;font-weight:600}'
+    + '.crx-bpc-row .lab small{display:block;font-size:12px;color:#94a3b8;margin-top:3px;line-height:1.45}'
+    + '.crx-bpc-row input[type=number]{width:84px;text-align:center;border:1px solid #d7dee7;border-radius:8px;padding:8px;font:inherit;font-size:14px}'
+    + '.crx-bpc-row select{border:1px solid #d7dee7;border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;max-width:100%;background:#fff}'
+    + '.crx-bpc-sw{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:#334155;cursor:pointer}'
+    + '.crx-bpc-sw input{width:18px;height:18px;accent-color:#1a5276;cursor:pointer}'
+    + '.crx-bpc-save{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:9px;background:#1a5276;color:#fff;font-size:13px;font-weight:600;padding:9px 18px;cursor:pointer}'
+    + '.crx-bpc-save:disabled{opacity:.6;cursor:not-allowed}'
+    + '.crx-bpc-msg{font-size:12px;margin-top:10px;min-height:16px}'
+    + '.crx-bpc-on .cras-tabs-bar button.border-primary:not(#crx-bpc-tab){border-color:transparent!important;color:#6b7280!important}';
+  var st = document.createElement('style');
+  st.id = 'crx-bpc-styles'; st.textContent = css; document.head.appendChild(st);
+
+  function toast(msg) {
+    var old = document.getElementById('crx-bpc-toast');
+    if (old) old.parentNode.removeChild(old);
+    var t = document.createElement('div');
+    t.id = 'crx-bpc-toast'; t.className = 'crx-bpc-toast'; t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 7000);
+  }
+
+  function loadCfg() {
+    return api('/rest/v1/configuracoes?select=chave,valor&chave=in.(bpc_exclusivo,bpc_limite_dia,bpc_tipo_id)')
+      .then(function (rows) {
+        var map = {};
+        (rows || []).forEach(function (r) { map[r.chave] = r.valor; });
+        cfg.enabled = map.bpc_exclusivo !== '0';
+        var n = Number(map.bpc_limite_dia);
+        cfg.limit = n > 0 ? n : 4;
+        cfg.tipoId = map.bpc_tipo_id || '';
+        return cfg;
+      })
+      .catch(function () { return cfg; });
+  }
+
+  function loadTipos() {
+    if (tipos && (Date.now() - tiposAt) < 60000) return Promise.resolve(tipos);
+    return api('/rest/v1/tipos_atendimento?select=id,nome,ativo&order=nome').then(function (rows) {
+      tipos = (rows || []).filter(function (t) { return t.ativo !== false; });
+      tiposAt = Date.now();
+      return tipos;
+    }).catch(function () { return tipos || []; });
+  }
+
+  function bpcTipoId() {
+    if (!tipos) return '';
+    if (cfg.tipoId) {
+      for (var i = 0; i < tipos.length; i++) if (String(tipos[i].id) === String(cfg.tipoId)) return String(tipos[i].id);
+    }
+    for (var j = 0; j < tipos.length; j++) if (isBpcName(tipos[j].nome)) return String(tipos[j].id);
+    return '';
+  }
+
+  function dayInfo(date) {
+    var c = dayCache[date];
+    if (c && (Date.now() - c.at) < 20000) return Promise.resolve(c.data);
+    return Promise.all([
+      loadTipos(),
+      api('/rest/v1/atendimentos?select=tipo_id,status,observacoes&data=eq.' + encodeURIComponent(date))
+    ]).then(function (r) {
+      var rows = (r[1] || []), bpcId = bpcTipoId(), bpc = 0, others = 0;
+      rows.forEach(function (a) {
+        if (String(a.status || '') === 'cancelado') return;
+        if (isEncaixe(a.observacoes)) return;
+        if (bpcId && String(a.tipo_id) === bpcId) bpc++;
+        else others++;
+      });
+      var data = { bpc: bpc, others: others, exclusive: bpc > 0 };
+      dayCache[date] = { at: Date.now(), data: data };
+      return data;
+    }).catch(function () { return { bpc: 0, others: 0, exclusive: false }; });
+  }
+
+  function clearDay(date) { delete dayCache[date]; }
+
+  function blocked(msg) {
+    var body = { code: 'CRAS_BPC', message: msg, details: null, hint: null };
+    return new Response(JSON.stringify(body), { status: 409, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  function check(payload) {
+    var date = String(payload.data || '').slice(0, 10);
+    if (!date || isEncaixe(payload.observacoes)) return Promise.resolve('');
+    if (!cfg.enabled) return Promise.resolve('');
+    return Promise.all([loadTipos(), dayInfo(date)]).then(function (r) {
+      var info = r[1];
+      var bpcId = bpcTipoId();
+      var isBpc = bpcId && String(payload.tipo_id) === bpcId;
+      if (info.exclusive && !isBpc) {
+        return 'O dia ' + brDate(date) + ' é exclusivo para Benefícios BPC. Nesse dia só é possível agendar BPC (a exceção é o Encaixe).';
+      }
+      if (isBpc && info.bpc >= cfg.limit) {
+        return 'Este dia já tem ' + info.bpc + ' de ' + cfg.limit + ' vagas de Benefícios BPC. Aumente o limite em Configurações ou escolha outro dia.';
+      }
+      return '';
+    });
+  }
+
+  var origFetch = window.fetch ? window.fetch.bind(window) : null;
+  if (origFetch) {
+    window.fetch = function (input, init) {
+      try {
+        var url = (typeof input === 'string') ? input : (input && input.url) || '';
+        var method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+        if (method === 'POST' && /\/rest\/v1\/atendimentos$/.test(url.split('?')[0]) && init && typeof init.body === 'string') {
+          var parsed = JSON.parse(init.body);
+          var p = Array.isArray(parsed) ? parsed[0] : parsed;
+          if (p && p.data && p.tipo_id) {
+            return check(p).then(function (msg) {
+              if (!msg) {
+                clearDay(String(p.data).slice(0, 10));
+                return origFetch(input, init);
+              }
+              toast(msg);
+              return blocked(msg);
+            });
+          }
+        }
+      } catch (e) {}
+      return origFetch(input, init);
+    };
+  }
+
+  function syncMsg() {
+    var d = scheduleDialog(); if (!d) return '';
+    var f = tipoField(d); if (!f || !cfg.enabled) return '';
+    var di = d.querySelector('input[type="date"]');
+    var date = (di && di.value) ? di.value : todayStr();
+    var c = dayCache[date];
+    if (!c || (Date.now() - c.at) > 20000) return '';
+    var info = c.data, bpcId = bpcTipoId(), v = String(f.sel.value || '');
+    var isBpc = !!(bpcId && v === bpcId);
+    if (info.exclusive && !isBpc) {
+      return 'O dia ' + brDate(date) + ' é exclusivo para Benefícios BPC. Nesse dia só é possível agendar BPC (a exceção é o Encaixe).';
+    }
+    if (isBpc && info.bpc >= cfg.limit) {
+      return 'Este dia já tem ' + info.bpc + ' de ' + cfg.limit + ' vagas de Benefícios BPC. Escolha outro dia ou aumente o limite em Configurações.';
+    }
+    return '';
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('button') : null;
+    if (!b) return;
+    var t = String(b.textContent || '').replace(/\s+/g, ' ').trim();
+    if (t !== 'Agendar' && t !== 'Finalizar e agendar') return;
+    if (!b.closest('[role="dialog"]')) return;
+    var m = syncMsg();
+    if (!m) return;
+    e.preventDefault(); e.stopPropagation();
+    toast(m);
+  }, true);
+
+  function scheduleDialog() {
+    var ds = document.querySelectorAll('[role="dialog"]'), i, d;
+    for (i = 0; i < ds.length; i++) {
+      d = ds[i];
+      if (!d.offsetParent) continue;
+      var t = String(d.textContent || '');
+      if (/Agendar Atendimento|Editar Atendimento/.test(t)) return d;
+    }
+    return null;
+  }
+
+  function tipoField(d) {
+    var labs = d.querySelectorAll('label'), i, host, sel;
+    for (i = 0; i < labs.length; i++) {
+      if (!/^Tipo de atendimento/i.test(String(labs[i].textContent || '').trim())) continue;
+      host = labs[i].parentElement;
+      sel = host && host.querySelector('select');
+      if (sel) return { host: host, sel: sel };
+    }
+    return null;
+  }
+
+  function paintNote(d, f, date, info) {
+    if (!f) return;
+    var note = d.querySelector('#crx-bpc-note');
+    if (!note) {
+      note = document.createElement('div');
+      note.id = 'crx-bpc-note';
+      f.host.parentNode.insertBefore(note, f.host.nextSibling);
+    }
+    var sel = f.sel;
+    var opt = sel.options[sel.selectedIndex];
+    var bpcId = bpcTipoId();
+    var isBpc = !!(opt && bpcId && String(opt.value) === bpcId);
+    var txt = '', cls = '';
+    if (!cfg.enabled) { note.className = 'crx-bpcn'; note.textContent = ''; note.style.display = 'none'; return; }
+
+    for (var i = 0; i < sel.options.length; i++) {
+      var o = sel.options[i];
+      if (!o.value) continue;
+      o.disabled = !!(info && info.exclusive && String(o.value) !== bpcId);
+    }
+
+    if (info && info.exclusive) {
+      if (isBpc) {
+        var free = cfg.limit - info.bpc;
+        txt = free > 0
+          ? 'Dia exclusivo de Benefícios BPC — ' + info.bpc + ' de ' + cfg.limit + ' vagas usadas.'
+          : 'Dia exclusivo de Benefícios BPC — limite de ' + cfg.limit + ' atendimento(s) atingido.';
+        cls = free > 0 ? 'ok' : 'warn';
+      } else {
+        txt = 'Este dia (' + brDate(date) + ') é exclusivo para Benefícios BPC. Escolha esse tipo ou registre um Encaixe.';
+        cls = 'warn';
+      }
+    } else if (isBpc) {
+      txt = 'Ao salvar, o dia ' + brDate(date) + ' ficará exclusivo para Benefícios BPC (até ' + cfg.limit + ' atendimentos). O Encaixe continua liberado.';
+      cls = 'info';
+    }
+
+    note.className = 'crx-bpcn ' + cls;
+    note.textContent = txt;
+    note.style.display = txt ? 'block' : 'none';
+  }
+
+  function syncDialog() {
+    var d = scheduleDialog();
+    if (!d) return;
+    var f = tipoField(d);
+    if (!f) return;
+    var di = d.querySelector('input[type="date"]');
+    var date = di && di.value ? di.value : todayStr();
+    if (f.sel.dataset.crxBpc !== '1') {
+      f.sel.dataset.crxBpc = '1';
+      f.sel.addEventListener('change', function () { syncDialogForce(); });
+    }
+    if (di && di.dataset.crxBpc !== '1') {
+      di.dataset.crxBpc = '1';
+      di.addEventListener('change', function () { syncDialogForce(); });
+    }
+    var key = date + '|' + f.sel.value;
+    if (d.dataset.crxKey === key) return;
+    d.dataset.crxKey = key;
+    Promise.all([loadCfg(), dayInfo(date)]).then(function (r) {
+      paintNote(d, f, date, r[1]);
+    });
+  }
+
+  function syncDialogForce() {
+    var d = scheduleDialog();
+    if (d) d.dataset.crxKey = '';
+    syncDialog();
+  }
+
+  function tabBar() {
+    var b = document.querySelector('.cras-tabs-bar');
+    return (b && b.offsetParent) ? b : null;
+  }
+
+  function contentHost() {
+    var bar = tabBar();
+    if (!bar) return null;
+    var kids = bar.parentElement.children, i, found = false;
+    for (i = 0; i < kids.length; i++) {
+      if (kids[i] === bar) { found = true; continue; }
+      if (found && kids[i].id !== 'crx-bpc-panel') return kids[i];
+    }
+    return null;
+  }
+
+  function ensureTab() {
+    var bar = tabBar();
+    if (!bar) return null;
+    var btn = document.getElementById('crx-bpc-tab');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'crx-bpc-tab';
+      btn.className = 'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors';
+      btn.innerHTML = '<span>Benefícios BPC</span>';
+      btn.addEventListener('click', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        activate(true);
+      });
+      bar.appendChild(btn);
+    }
+    if (bar.dataset.crxBpc !== '1') {
+      bar.dataset.crxBpc = '1';
+      bar.addEventListener('click', function (e) {
+        var b = document.getElementById('crx-bpc-tab');
+        if (b && (e.target === b || b.contains(e.target))) return;
+        activate(false);
+      }, true);
+    }
+    return btn;
+  }
+
+  function buildPanel() {
+    var p = document.createElement('div');
+    p.id = 'crx-bpc-panel';
+    p.className = 'card p-6 p-5';
+    p.innerHTML = ''
+      + '<div class="flex items-center gap-2 mb-1">'
+      + '  <span style="display:inline-flex;color:#1a5276"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"></path><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4z"></path></svg></span>'
+      + '  <h3 class="font-semibold text-gray-700">Benefícios BPC — dia exclusivo</h3>'
+      + '</div>'
+      + '<p class="text-xs text-gray-400 mb-3">Quando um atendimento de Benefícios BPC é agendado, o dia fica reservado para esse serviço: o sistema não deixa agendar outros tipos na mesma data. A única exceção é o Encaixe.</p>'
+      + '<div class="crx-bpc-row">'
+      + '  <div class="lab"><b>Dia exclusivo para BPC</b><small>Se desligado, o sistema volta a aceitar qualquer tipo em qualquer dia.</small></div>'
+      + '  <label class="crx-bpc-sw"><input type="checkbox" id="crx-bpc-on" checked> Ativo</label>'
+      + '</div>'
+      + '<div class="crx-bpc-row">'
+      + '  <div class="lab"><b>Tipo de atendimento</b><small>Qual tipo da lista representa o Benefícios BPC.</small></div>'
+      + '  <select id="crx-bpc-tipo"></select>'
+      + '</div>'
+      + '<div class="crx-bpc-row">'
+      + '  <div class="lab"><b>Atendimentos por dia exclusivo</b><small>Quantos Benefícios BPC cabem no dia reservado (1 a 99).</small></div>'
+      + '  <input type="number" id="crx-bpc-limit" min="1" max="99" step="1" value="4">'
+      + '</div>'
+      + '<div class="flex items-center justify-between gap-3 mt-4" style="flex-wrap:wrap">'
+      + '  <span class="text-xs text-gray-400">Vale para todos os profissionais e para a Agenda inteira.</span>'
+      + '  <button type="button" class="crx-bpc-save" id="crx-bpc-save">Salvar</button>'
+      + '</div>'
+      + '<p class="crx-bpc-msg" id="crx-bpc-msg"></p>';
+    p.querySelector('#crx-bpc-save').addEventListener('click', saveCfg);
+    return p;
+  }
+
+  function fillPanel(p) {
+    var on = p.querySelector('#crx-bpc-on'), lim = p.querySelector('#crx-bpc-limit'), sel = p.querySelector('#crx-bpc-tipo');
+    on.checked = !!cfg.enabled;
+    lim.value = String(cfg.limit);
+    loadTipos().then(function (list) {
+      sel.innerHTML = '';
+      var auto = document.createElement('option');
+      auto.value = ''; auto.textContent = 'Detectar pelo nome (BPC)';
+      sel.appendChild(auto);
+      (list || []).forEach(function (t) {
+        var o = document.createElement('option');
+        o.value = String(t.id); o.textContent = t.nome;
+        sel.appendChild(o);
+      });
+      sel.value = cfg.tipoId || '';
+      var id = bpcTipoId();
+      var found = (list || []).filter(function (t) { return String(t.id) === id; })[0];
+      var msg = p.querySelector('#crx-bpc-msg');
+      if (id) { msg.style.color = '#15803d'; msg.textContent = 'Tipo reconhecido: ' + found.nome + '.'; }
+      else { msg.style.color = '#b45309'; msg.textContent = 'Nenhum tipo com "BPC" no nome. Cadastre o tipo em Tipos de Atendimento ou escolha na lista acima.'; }
+    });
+  }
+
+  function saveCfg() {
+    var p = document.getElementById('crx-bpc-panel');
+    if (!p) return;
+    var on = p.querySelector('#crx-bpc-on').checked;
+    var lim = Number(p.querySelector('#crx-bpc-limit').value);
+    var sel = p.querySelector('#crx-bpc-tipo').value;
+    var msg = p.querySelector('#crx-bpc-msg');
+    if (!Number.isInteger(lim) || lim < 1 || lim > 99) {
+      msg.style.color = '#b91c1c'; msg.textContent = 'Informe um número inteiro de 1 a 99.';
+      return;
+    }
+    var btn = p.querySelector('#crx-bpc-save'); btn.disabled = true;
+    api('/rest/v1/configuracoes?on_conflict=chave', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: [
+        { chave: 'bpc_exclusivo', valor: on ? '1' : '0' },
+        { chave: 'bpc_limite_dia', valor: String(lim) },
+        { chave: 'bpc_tipo_id', valor: sel || '' }
+      ]
+    }).then(function () {
+      cfg.enabled = on; cfg.limit = lim; cfg.tipoId = sel;
+      dayCache = {};
+      msg.style.color = '#15803d';
+      msg.textContent = 'Salvo. ' + (on ? 'Dia exclusivo ativo, ' + lim + ' BPC por dia.' : 'Regra desligada — qualquer tipo pode ser agendado.');
+      toast('Configuração de Benefícios BPC salva.');
+    }).catch(function (e) {
+      msg.style.color = '#b91c1c';
+      msg.textContent = 'Não foi possível salvar: ' + (e.message || e);
+    }).then(function () { btn.disabled = false; });
+  }
+
+  function activate(on) {
+    var bar = tabBar();
+    if (!bar) return;
+    var host = contentHost();
+    var old = document.getElementById('crx-bpc-panel');
+    activeTab = on;
+    if (on) {
+      if (host) host.style.display = 'none';
+      document.body.classList.add('crx-bpc-on');
+      var btn = document.getElementById('crx-bpc-tab');
+      if (btn) btn.className = 'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 border-primary text-primary transition-colors';
+      if (!old) {
+        var p = buildPanel();
+        if (host && host.parentNode) host.parentNode.insertBefore(p, host.nextSibling);
+        else bar.parentElement.appendChild(p);
+        fillPanel(p);
+      }
+    } else {
+      if (host) host.style.display = '';
+      document.body.classList.remove('crx-bpc-on');
+      var b2 = document.getElementById('crx-bpc-tab');
+      if (b2) b2.className = 'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors';
+      if (old && old.parentNode) old.parentNode.removeChild(old);
+    }
+  }
+
+  function syncTab() {
+    var onConfig = /\/configuracoes\/?$/i.test(String(location.pathname).split('?')[0]);
+    if (!onConfig) {
+      if (activeTab) activate(false);
+      activeTab = false;
+      return;
+    }
+    if (!tabBar()) return;
+    ensureTab();
+    if (activeTab) {
+      var host = contentHost();
+      if (host) host.style.display = 'none';
+      document.body.classList.add('crx-bpc-on');
+      if (!document.getElementById('crx-bpc-panel')) {
+        var p = buildPanel();
+        if (host && host.parentNode) host.parentNode.insertBefore(p, host.nextSibling);
+        else tabBar().parentElement.appendChild(p);
+        fillPanel(p);
+      }
+    }
+  }
+
+  function nudge() {
+    if (tick) return;
+    tick = setTimeout(function () {
+      tick = null;
+      try { syncDialog(); } catch (e) {}
+      try { syncTab(); } catch (e) {}
+    }, 220);
+  }
+
+  function boot() {
+    loadCfg();
+    loadTipos();
+    nudge();
+    var mo = new MutationObserver(function () { nudge(); });
+    mo.observe(document.body, { childList: true, subtree: true });
+    setInterval(function () { try { syncTab(); } catch (e) {} }, 1500);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+
+  window.CRAS_BPC = { version: VERSION, check: check, cfg: function () { return cfg; } };
+})();
+
+</script>
   </body>
 </html>
