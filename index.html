@@ -295,11 +295,11 @@
         .splash-progress.indeterminate .splash-fill { animation: none; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index.js?v=v163"></script>
+    <script type="module" crossorigin src="/assets/index.js?v=v165"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor.js">
     <link rel="modulepreload" crossorigin href="/assets/charts.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase.js">
-    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v163">
+    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v165">
   </head>
   <body>
     <!-- Tela de abertura: logotipo original preservado + barra de progresso REAL.
@@ -1013,8 +1013,988 @@
     </script>
     <!-- O pacote principal do app carrega DEPOIS que a API da tela de abertura
          (window.__crasSplash) já está definida acima, evitando a tela presa em 0%. -->
-    <script src="/assets/supabase.js?v=v163" type="module"></script>
-    <script src="/cras-encaixe.js?v=v163" defer></script>
-    <script src="/cras-fotos.js?v=v163" defer></script>
+    <script src="/assets/supabase.js?v=v165" type="module"></script>
+    <script>
+/* CRAS Delfinópolis — Encaixe (v164)
+   Módulo complementar: NÃO substitui nenhuma tela do sistema.
+   - Botão "Encaixe" na Agenda e em Atendimentos do dia
+   - Grava no mesmo cadastro de atendimentos (identificado como Encaixe)
+   - Limite diário compartilhado, definido só por administrador
+   - Libera a vaga ao cancelar
+   - Não permite em feriado / dia fechado
+   - Proteção contra cadastros simultâneos (função no banco; se não existir, confere de novo antes de salvar)
+*/
+(function () {
+  'use strict';
+  if (window.__crasEncaixeLoaded) return;
+  window.__crasEncaixeLoaded = true;
+
+  var MARK = '[ENCAIXE]';
+  var MARK_OFF = '[ENCAIXE CANCELADO]';
+  var sb = null, profile = null, authUser = null;
+  var observer = null, modal = null, selectedUser = null, searchTimer = null;
+  var currentLimit = 3, currentCount = 0, closedReason = '';
+
+  /* ---------------- estilo ---------------- */
+  var css = ''
+   + '.crx-btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:10px;padding:9px 15px;background:#198754;color:#fff;font-weight:700;font-size:13px;box-shadow:0 3px 10px rgba(25,135,84,.18);cursor:pointer;white-space:nowrap;transition:.18s}'
+   + '.crx-btn:hover{background:#157347;transform:translateY(-1px)}'
+   + '.crx-count{font-size:11px;color:#64748b;font-weight:700;margin-left:2px;white-space:nowrap}'
+   + '.crx-ov{position:fixed;inset:0;z-index:2147483000;background:rgba(15,23,42,.56);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}'
+   + '.crx-modal{width:min(100%,660px);max-height:min(92vh,860px);overflow:auto;background:#fff;border-radius:18px;box-shadow:0 25px 80px rgba(0,0,0,.28);font-family:inherit;color:#1f2937}'
+   + '.crx-head{padding:20px 24px;background:linear-gradient(135deg,#176b45,#21885b);color:#fff;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-radius:18px 18px 0 0}'
+   + '.crx-head h2{font-size:20px;font-weight:800;margin:0}.crx-head p{font-size:12px;margin:5px 0 0;color:#e6fff1}'
+   + '.crx-x{border:0;background:rgba(255,255,255,.15);color:#fff;width:34px;height:34px;border-radius:9px;font-size:22px;cursor:pointer;line-height:1}'
+   + '.crx-body{padding:22px 24px}.crx-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}'
+   + '.crx-f{min-width:0}.crx-f.full{grid-column:1/-1}.crx-f label{display:block;font-size:12px;font-weight:700;color:#475569;margin:0 0 6px}'
+   + '.crx-f input,.crx-f select,.crx-f textarea{box-sizing:border-box;width:100%;border:1px solid #d7dee7;border-radius:9px;padding:10px 11px;background:#fff;color:#1f2937;font:inherit;font-size:14px;outline:none}'
+   + '.crx-f input:focus,.crx-f select:focus,.crx-f textarea:focus{border-color:#269765;box-shadow:0 0 0 3px rgba(38,151,101,.12)}'
+   + '.crx-f textarea{resize:vertical;min-height:78px}.crx-help{font-size:11px;color:#64748b;margin-top:5px}'
+   + '.crx-res{display:none;position:absolute;left:0;right:0;top:100%;max-height:190px;overflow:auto;background:#fff;border:1px solid #d7dee7;border-radius:9px;box-shadow:0 10px 24px rgba(0,0,0,.12);z-index:5}'
+   + '.crx-opt{display:block;width:100%;padding:9px 11px;border:0;border-bottom:1px solid #f1f5f9;background:#fff;text-align:left;cursor:pointer;font-size:13px;color:#1f2937}.crx-opt:hover{background:#f0fdf4}.crx-opt small{display:block;color:#64748b;margin-top:2px}'
+   + '.crx-wrap{position:relative}.crx-st{margin-top:15px;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:600;background:#eff6ff;color:#1d4ed8}'
+   + '.crx-st.warn{background:#fff7ed;color:#9a3412}.crx-st.error{background:#fef2f2;color:#b91c1c}.crx-st.ok{background:#f0fdf4;color:#166534}'
+   + '.crx-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 24px 22px;border-top:1px solid #eef2f7;flex-wrap:wrap}'
+   + '.crx-b{border:0;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer}.crx-b.p{background:#198754;color:#fff}.crx-b.s{background:#f1f5f9;color:#475569}.crx-b:disabled{opacity:.55;cursor:not-allowed}'
+   + '.crx-cfgbtn{border:1px solid #dbeafe;background:#eff6ff;color:#1d4ed8;border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer}'
+   + '.crx-cfg{display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:11px;padding:14px;margin-top:14px}.crx-cfg.open{display:block}'
+   + '@media(max-width:560px){.crx-grid{grid-template-columns:1fr}.crx-f.full{grid-column:auto}.crx-body{padding:17px}.crx-head{padding:17px}.crx-foot{padding:14px 17px 18px}.crx-btn{padding:8px 11px}}';
+  css += '.crx-hbtn-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto;min-width:0;order:9}'
+   + '.crx-hbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 16px;border:0;border-radius:8px;background:#1a5276;color:#fff;font-family:inherit;font-size:14px;font-weight:500;line-height:1;cursor:pointer;white-space:nowrap;transition:background .15s ease}'
+   + '.crx-hbtn:hover{background:#21618c}'
+   + '.crx-hbtn:active{background:#154360}'
+   + '.crx-hbtn:focus-visible{outline:2px solid #1a5276;outline-offset:2px}'
+   + '.crx-hbtn-ico{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}'
+   + '.crx-hbtn-count{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;background:rgba(255,255,255,.2);font-size:11.5px;font-weight:700;letter-spacing:.2px}'
+   + '.crx-hbtn.full{background:#b45309}'
+   + '.crx-hbtn.full:hover{background:#92400e}'
+   + '.crx-hbtn.full .crx-hbtn-count{background:rgba(255,255,255,.25)}'
+   + '@media(max-width:560px){.crx-hbtn-wrap{width:100%;margin-left:0!important;gap:8px}.crx-hbtn{height:38px;padding:0 16px;font-size:13.5px;flex:1 1 auto;width:100%}}'
+  var st = document.createElement('style');
+  st.id = 'crx-styles'; st.textContent = css; document.head.appendChild(st);
+
+  /* ---------------- utilidades ---------------- */
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function logdbg() {}
+  function today() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function norm(s) {
+    return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+  function isEncaixe(obs) { return /\[ENCAIXE\]/i.test(String(obs || '')); }
+  function say(text, type) {
+    var el = modal && modal.querySelector('#crx-status');
+    if (!el) return;
+    el.className = 'crx-st ' + (type || '');
+    el.textContent = text;
+  }
+  function isAdmin() { return !!(profile && String(profile.perfil || '').toLowerCase() === 'admin'); }
+
+    /* ---------------- botão na tela ----------------
+     O botão tem lugar próprio: um botão fixo criado por este módulo, sempre no
+     mesmo canto da tela. Não depende de existir título, campo de data ou botão
+     na tela do sistema, por isso aparece igual em Agenda e em Atendimentos do dia. */
+  var hbtn = null, hbadge = null, lastRoute = '', btnTick = null, domObs = null;
+
+  function currentRoute() {
+    var path = '', hash = '';
+    try { path = String((window.location && window.location.pathname) || ''); } catch (e) { path = ''; }
+    try { hash = String((window.location && window.location.hash) || ''); } catch (e) { hash = ''; }
+    if (hash.indexOf('#/') === 0) path = hash.slice(1);
+    path = path.split('?')[0].replace(/\/+$/, '');
+    if (/\/atendimentos$/i.test(path)) return 'atendimentos';
+    if (/\/agenda$/i.test(path)) return 'agenda';
+    return '';
+  }
+
+  function setCounter(txt, full) {
+    if (hbadge) hbadge.textContent = txt;
+    if (hbtn) hbtn.className = 'crx-hbtn' + (full ? ' full' : '');
+  }
+
+  function buildButton() {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.id = 'crx-btn';
+    b.className = 'crx-hbtn';
+    b.title = 'Registrar atendimento fora da agenda (Encaixe)';
+    b.setAttribute('aria-label', 'Encaixe');
+    b.innerHTML = '<span class="crx-hbtn-ico" aria-hidden="true">'
+      + '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>'
+      + '</span><span class="crx-hbtn-lbl">Encaixe</span>'
+      + '<span class="crx-hbtn-count">0/' + currentLimit + ' hoje</span>';
+    b.addEventListener('click', openModal);
+    hbtn = b;
+    hbadge = b.querySelector('.crx-hbtn-count');
+    return b;
+  }
+
+  /* Acha a faixa de título da tela atual (onde ficam o nome da tela e os botões). */
+  function headerRow() {
+    var h1s = document.querySelectorAll('h1'), i, t, host, row;
+    for (i = 0; i < h1s.length; i++) {
+      t = String(h1s[i].textContent || '').replace(/\s+/g, ' ').trim();
+      if (!/^Atendimentos do dia$/i.test(t) && !/^Agenda$/i.test(t)) continue;
+      host = h1s[i].parentElement;
+      row = host && host.parentElement;
+      if (row && row.children && row.children.length) return { row: row, host: host };
+    }
+    return null;
+  }
+
+  /* Coloca o botão na mesma faixa dos botões do sistema, alinhado à direita. */
+  function placeButton() {
+    var h = headerRow();
+    if (!h) return false;
+    var wrap = h.row.querySelector('.crx-hbtn-wrap');
+    if (wrap && wrap.parentNode !== h.row) wrap = null;
+    if (!hbtn) buildButton();
+    if (wrap && wrap.contains(hbtn)) {
+      if (h.row.lastElementChild !== wrap) h.row.appendChild(wrap);
+      packRight(h.row, h.host, wrap);
+      return true;
+    }
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'crx-hbtn-wrap';
+      var kids = [], i;
+      for (i = 0; i < h.row.children.length; i++) {
+        if (h.row.children[i] !== h.host && h.row.children[i] !== hbtn) kids.push(h.row.children[i]);
+      }
+      for (i = 0; i < kids.length; i++) wrap.appendChild(kids[i]);
+      h.row.appendChild(wrap);
+    }
+    wrap.appendChild(hbtn);
+    packRight(h.row, h.host, wrap);
+    return true;
+  }
+
+  /* Mantém o botão colado ao lado dos botões do sistema, ambos à direita. */
+  function packRight(row, host, wrap) {
+    var kids = row.children, i, first = null;
+    for (i = 0; i < kids.length; i++) {
+      if (kids[i] === host || kids[i] === wrap) continue;
+      first = kids[i];
+      break;
+    }
+    for (i = 0; i < kids.length; i++) {
+      if (kids[i] === host || kids[i] === wrap) continue;
+      try { kids[i].style.marginLeft = (kids[i] === first) ? 'auto' : ''; } catch (e) {}
+    }
+    try { wrap.style.marginLeft = first ? '10px' : ''; } catch (e) {}
+  }
+
+  function syncButton() {
+    var route = currentRoute();
+    if (!route) {
+      if (hbtn && hbtn.parentNode) hbtn.parentNode.removeChild(hbtn);
+      lastRoute = '';
+      return;
+    }
+    if (!document.body) return;
+    if (!placeButton()) return;
+    if (route !== lastRoute) {
+      lastRoute = route;
+      refreshCounter();
+      setTimeout(markScreens, 700);
+    }
+  }
+
+  function nudge() {
+    if (btnTick) return;
+    btnTick = setTimeout(function () { btnTick = null; try { syncButton(); } catch (e) {} }, 180);
+  }
+
+  /* Se a tela se redesenhar, o botão volta para o lugar sozinho. */
+  function watchDom() {
+    if (domObs) return;
+    try {
+      domObs = new MutationObserver(function () { nudge(); });
+      domObs.observe(document.body, { childList: true, subtree: true });
+    } catch (e) { domObs = null; }
+  }
+
+  function watchNavigation() {
+    try {
+      var hook = function (name) {
+        var orig = window.history && window.history[name];
+        if (typeof orig !== 'function' || orig.__crxNav) return;
+        var fn = function () { var r = orig.apply(window.history, arguments); nudge(); return r; };
+        fn.__crxNav = 1;
+        window.history[name] = fn;
+      };
+      hook('pushState'); hook('replaceState');
+    } catch (e) {}
+    ['popstate', 'hashchange', 'pageshow', 'focus', 'cras-encaixe-sync', 'cras-supabase-ready'].forEach(function (ev) {
+      try { window.addEventListener(ev, nudge); } catch (e) {}
+      try { document.addEventListener(ev, nudge); } catch (e) {}
+    });
+    setInterval(function () { if (currentRoute() !== lastRoute) nudge(); }, 700);
+  }
+
+  /* Mostra no prontuário / na lista de atendimentos que aquele registro é um Encaixe. */
+  function markScreens() {
+    var nodes = document.querySelectorAll('div,p,span,td,li,small,strong');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (el.children && el.children.length > 0) continue;
+      var t = (el.textContent || '').trim();
+      if (t.indexOf('[ENCAIXE]') !== 0) continue;
+      if (el.parentNode && el.parentNode.querySelector && el.parentNode.querySelector('.crx-encaixe-tag')) continue;
+      var clean = t.replace(/^\[ENCAIXE\]\s*[\-–:]?\s*/i, '').trim();
+      el.textContent = clean || 'Encaixe';
+      el.style.color = '#166534';
+      el.style.fontWeight = '600';
+      var tag = document.createElement('span');
+      tag.className = 'crx-encaixe-tag';
+      tag.textContent = 'ENC';
+      tag.title = 'Atendimento do tipo Encaixe (fora da agenda normal)';
+      tag.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;background:#e8f6ef;color:#166534;border:1px solid #b7e3cb;font-size:10px;font-weight:800;letter-spacing:.4px;vertical-align:middle';
+      if (el.parentNode) el.parentNode.insertBefore(tag, el.nextSibling);
+    }
+  }
+  function refreshCounter() {
+    if (!accessToken()) { setCounter('0/' + currentLimit + ' hoje', false); return; }
+    var d = today();
+    Promise.all([getLimit(), countEncaixes(d)]).then(function (r) {
+      currentLimit = r[0]; currentCount = r[1];
+      setCounter(r[1] + '/' + r[0] + ' hoje', r[1] >= r[0]);
+    }).catch(function () {});
+  }
+
+  /* ---------------- acesso aos dados --------------
+     Fala direto com o banco usando a sessão que já está aberta no navegador.
+     Não depende de nenhum arquivo do sistema que possa estar velho no cache. */
+  var SB_URL = 'https://tizruuquhhpmykkjsmpn.supabase.co';
+  var SB_KEY = 'sb_publishable_l-COxHSUAoiOf7PMXAb3SQ_ZWZk1v1w';
+
+  function accessToken() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || !/-auth-token$/.test(k)) continue;
+        var raw = null;
+        try { raw = localStorage.getItem(k); } catch (e) { raw = null; }
+        if (!raw) continue;
+        var o = null;
+        try { o = JSON.parse(raw); } catch (e) { o = null; }
+        if (o && o.access_token) return o.access_token;
+        if (o && o.currentSession && o.currentSession.access_token) return o.currentSession.access_token;
+      }
+    } catch (e) {}
+    return '';
+  }
+
+  function totalFrom(cr) {
+    if (!cr) return null;
+    var parts = String(cr).split('/');
+    var n = Number(parts[1]);
+    return isNaN(n) ? null : n;
+  }
+
+  function api(path, opt) {
+    opt = opt || {};
+    var h = { apikey: SB_KEY };
+    var tk = accessToken();
+    if (tk) h.Authorization = 'Bearer ' + tk;
+    if (opt.prefer) h.Prefer = opt.prefer;
+    if (opt.range) h.Range = opt.range;
+    if (opt.body !== undefined) h['Content-Type'] = 'application/json';
+    return fetch(SB_URL + path, {
+      method: opt.method || 'GET',
+      headers: h,
+      body: opt.body === undefined ? undefined : JSON.stringify(opt.body),
+      cache: 'no-store',
+      credentials: 'omit'
+    }).then(function (r) {
+      return r.text().then(function (txt) {
+        var data = null;
+        if (txt) { try { data = JSON.parse(txt); } catch (e) { data = txt; } }
+        if (!r.ok) {
+          var msg = (data && (data.message || data.error_description || data.hint || data.msg)) || ('Falha de comunicação (' + r.status + ')');
+          var err = new Error(msg);
+          err.code = (data && data.code) || ('HTTP' + r.status);
+          err.status = r.status;
+          throw err;
+        }
+        return { data: data, total: totalFrom(r.headers.get('content-range')) };
+      });
+    });
+  }
+  function enc(v) { return encodeURIComponent(v); }
+
+  function selectRows(path) {
+    return api(path).then(function (r) { return (r.data || []); });
+  }
+
+  function getLimit() {
+    return api('/rest/v1/configuracoes?select=valor&chave=eq.encaixe_limite_diario&limit=1')
+      .then(function (r) {
+        var row = r.data && r.data[0];
+        var v = row && Number(row.valor);
+        return v > 0 ? v : 3;
+      })
+      .catch(function () { return 3; });
+  }
+
+  function countEncaixes(date) {
+    var path = '/rest/v1/atendimentos?select=id&data=eq.' + enc(date)
+      + '&status=neq.cancelado'
+      + '&observacoes=ilike.' + enc('*[ENCAIXE]*');
+    return api(path, { prefer: 'count=exact' })
+      .then(function (r) {
+        if (r.total !== null && r.total !== undefined) return r.total;
+        return (r.data && r.data.length) || 0;
+      });
+  }
+
+  function getClosedReason(date) {
+    return Promise.all([
+      api('/rest/v1/feriados?select=data,nome&data=eq.' + enc(date) + '&fechado=eq.true&limit=1')
+        .then(function (r) { return (r.data && r.data[0]) || null; })
+        .catch(function () { return null; }),
+      api('/rest/v1/configuracoes?select=valor&chave=eq.agenda_dia_vagas&limit=1')
+        .then(function (r) { return (r.data && r.data[0]) || null; })
+        .catch(function () { return null; })
+    ]).then(function (r) {
+      if (r[0] && r[0].data) return 'Esta data está marcada como feriado/dia fechado.';
+      var map = {};
+      try { map = JSON.parse((r[1] && r[1].valor) || '{}') || {}; } catch (e) { map = {}; }
+      if (Object.prototype.hasOwnProperty.call(map, date) && Number(map[date]) === 0) return 'Esta data está fechada na Agenda.';
+      return '';
+    });
+  }
+
+  /* ---------------- janela ---------------- */
+  function applyProfile() {
+    if (!modal) return;
+    var box = modal.querySelector('#crx-admin');
+    if (!box) return;
+    var cfg = modal.querySelector('#crx-cfg');
+    var btn = box.querySelector('.crx-cfgbtn');
+    if (isAdmin()) {
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'crx-cfgbtn';
+        btn.textContent = 'Configurar limite';
+        btn.addEventListener('click', function () {
+          if (!modal) return;
+          var p = modal.querySelector('#crx-cfg');
+          if (!p) return;
+          p.classList.toggle('open');
+          modal.querySelector('#crx-limit').value = String(currentLimit);
+        });
+        box.insertBefore(btn, box.firstChild);
+      }
+      if (cfg) cfg.style.display = '';
+    } else {
+      if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
+      if (cfg) cfg.style.display = 'none';
+    }
+  }
+
+  function makeModal() {
+    if (modal) modal.remove();
+    modal = document.createElement('div');
+    modal.className = 'crx-ov';
+    modal.innerHTML = ''
+      + '<section class="crx-modal" role="dialog" aria-modal="true" aria-labelledby="crx-title">'
+      + '<header class="crx-head"><div><h2 id="crx-title">Novo Encaixe</h2><p>Atendimento fora da agenda normal &bull; limite compartilhado do dia</p></div><button type="button" class="crx-x" aria-label="Fechar">&times;</button></header>'
+      + '<div class="crx-body">'
+      + '<div class="crx-grid">'
+      + '<div class="crx-f"><label for="crx-date">Data *</label><input id="crx-date" type="date" required></div>'
+      + '<div class="crx-f"><label for="crx-time">Horário</label><input id="crx-time" type="time" value="08:00"></div>'
+      + '<div class="crx-f full"><label for="crx-user">Cidadão *</label><div class="crx-wrap"><input id="crx-user" type="text" placeholder="Digite o nome ou CPF..." autocomplete="off"><div id="crx-res" class="crx-res"></div></div><div id="crx-sel" class="crx-help">Nenhum cidadão selecionado.</div></div>'
+      + '<div class="crx-f"><label for="crx-type">Tipo de Atendimento *</label><select id="crx-type"><option value="">Carregando...</option></select></div>'
+      + '<div class="crx-f"><label for="crx-prof">Profissional</label><select id="crx-prof"><option value="">Não informado</option></select></div>'
+      + '<div class="crx-f full"><label for="crx-notes">Observações</label><textarea id="crx-notes" placeholder="Motivo e informações do atendimento..."></textarea><div class="crx-help">O registro fica identificado como Encaixe no prontuário e nos relatórios.</div></div>'
+      + '</div>'
+      + '<div id="crx-status" class="crx-st">Verificando o dia...</div>'
+      + '<div id="crx-cfg" class="crx-cfg"><div class="crx-f"><label for="crx-limit">Máximo de Encaixes por dia (todos os profissionais)</label><input id="crx-limit" type="number" min="1" max="99" step="1" value="3"></div><div class="crx-help">Somente administradores alteram este limite. Cancelamentos liberam a vaga.</div><div style="display:flex;justify-content:flex-end;margin-top:10px"><button id="crx-savelimit" type="button" class="crx-b p">Salvar limite</button></div></div>'
+      + '</div>'
+      + '<footer class="crx-foot"><div id="crx-admin"></div><div style="display:flex;gap:8px;margin-left:auto"><button type="button" id="crx-cancel" class="crx-b s">Fechar</button><button type="button" id="crx-save" class="crx-b p">Salvar Encaixe</button></div></footer>'
+      + '</section>';
+    document.body.appendChild(modal);
+    modal.querySelector('.crx-x').addEventListener('click', closeModal);
+    modal.querySelector('#crx-cancel').addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+    modal.querySelector('#crx-date').addEventListener('change', checkDay);
+    modal.querySelector('#crx-user').addEventListener('input', searchUsers);
+    modal.querySelector('#crx-user').addEventListener('focus', searchUsers);
+    modal.querySelector('#crx-save').addEventListener('click', saveEncaixe);
+    modal.querySelector('#crx-savelimit').addEventListener('click', saveLimit);
+    var ver = document.createElement('span');
+    ver.className = 'crx-ver';
+    ver.textContent = 'Encaixe v165';
+    ver.style.cssText = 'font-size:10px;color:#94a3b8;font-weight:700;margin-right:8px;letter-spacing:.3px';
+    modal.querySelector('#crx-admin').appendChild(ver);
+    applyProfile();
+    var d = today();
+    var inputs = document.querySelectorAll('input[type="date"]');
+    for (var i = 0; i < inputs.length; i++) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(inputs[i].value || '')) { d = inputs[i].value; break; }
+    }
+    modal.querySelector('#crx-date').value = d;
+    selectedUser = null;
+  }
+  function closeModal() { if (modal) modal.remove(); modal = null; selectedUser = null; }
+  function openModal() {
+    if (!sb) sb = findClient();
+    makeModal();
+    applyProfile();
+    loadProfile()
+      .then(function () { applyProfile(); return loadOptions(); })
+      .then(checkDay)
+      .catch(function () { checkDay(); });
+  }
+  function loadOptions() {
+    return Promise.all([
+      selectRows('/rest/v1/tipos_atendimento?select=id,nome&ativo=eq.true&order=nome'),
+      selectRows('/rest/v1/profissionais?select=id,nome&ativo=eq.true&order=nome'),
+      getLimit()
+    ]).then(function (r) {
+      var ts = modal.querySelector('#crx-type');
+      ts.innerHTML = '<option value="">Selecione...</option>';
+      (r[0] || []).forEach(function (x) {
+        var o = document.createElement('option'); o.value = x.id; o.textContent = x.nome; ts.appendChild(o);
+      });
+      var ps = modal.querySelector('#crx-prof');
+      ps.innerHTML = '<option value="">Não informado</option>';
+      (r[1] || []).forEach(function (x) {
+        var o = document.createElement('option'); o.value = x.id; o.textContent = x.nome; ps.appendChild(o);
+      });
+      currentLimit = r[2];
+      var li = modal.querySelector('#crx-limit');
+      if (li) li.value = String(currentLimit);
+    }).catch(function (e) {
+      if (e && (e.status === 401 || e.status === 403)) {
+        say('Sua sessão expirou. Saia e entre novamente no sistema para registrar o Encaixe.', 'error');
+      } else {
+        say('Não foi possível carregar tipos e profissionais: ' + (e && e.message ? e.message : e), 'error');
+      }
+    });
+  }
+  function searchUsers() {
+    if (!modal) return;
+    var input = modal.querySelector('#crx-user');
+    var q = input.value.trim();
+    selectedUser = null;
+    modal.querySelector('#crx-sel').textContent = 'Selecione um cidadão na lista.';
+    var box = modal.querySelector('#crx-res');
+    if (searchTimer) clearTimeout(searchTimer);
+    if (q.length < 2) { box.style.display = 'none'; return; }
+    searchTimer = setTimeout(function () {
+      var safe = q.replace(/[%_]/g, '');
+      var caminho = '/rest/v1/usuarios?select=id,nome,cpf&or='
+        + enc('(nome.ilike.*' + safe + '*,cpf.ilike.*' + safe + '*)')
+        + '&order=nome&limit=15';
+      api(caminho)
+        .then(function (r) {
+          var lista = (r && r.data) || [];
+          box.innerHTML = '';
+          lista.forEach(function (u) {
+            var b = document.createElement('button');
+            b.type = 'button'; b.className = 'crx-opt';
+            b.innerHTML = '<span>' + esc(u.nome) + '</span><small>' + esc(u.cpf || 'CPF não informado') + '</small>';
+            b.addEventListener('click', function () {
+              selectedUser = u; input.value = u.nome;
+              modal.querySelector('#crx-sel').textContent = 'Selecionado: ' + u.nome + (u.cpf ? ' • CPF ' + u.cpf : '');
+              box.style.display = 'none';
+            });
+            box.appendChild(b);
+          });
+          if (!lista.length) {
+            var e = document.createElement('div'); e.className = 'crx-opt'; e.textContent = 'Nenhum cidadão encontrado.'; box.appendChild(e);
+          }
+          box.style.display = 'block';
+        })
+        .catch(function (e) { say('Erro ao buscar cidadão: ' + (e && e.message ? e.message : e), 'error'); });
+    }, 220);
+  }
+
+  /* ---------------- verificação do dia ---------------- */
+  function checkDay() {
+    if (!modal) return Promise.resolve();
+    var date = modal.querySelector('#crx-date').value;
+    if (!date) return Promise.resolve();
+    return Promise.all([getClosedReason(date), countEncaixes(date), getLimit()])
+      .then(function (r) {
+        closedReason = r[0]; currentCount = r[1]; currentLimit = r[2];
+        var save = modal.querySelector('#crx-save');
+        if (closedReason) {
+          say(closedReason + ' Não é possível registrar Encaixe.', 'error');
+          save.disabled = true;
+        } else if (currentCount >= currentLimit) {
+          say('Limite do dia atingido: ' + currentCount + '/' + currentLimit + '. Cancelar um Encaixe libera a vaga.', 'warn');
+          save.disabled = true;
+        } else {
+          say('Disponível: ' + currentCount + ' de ' + currentLimit + ' Encaixes usados neste dia.', 'ok');
+          save.disabled = false;
+        }
+        setCounter(currentCount + '/' + currentLimit + ' hoje', currentCount >= currentLimit);
+      })
+      .catch(function (e) {
+        say('Não foi possível verificar o limite do dia: ' + (e && e.message ? e.message : e), 'error');
+        var s2 = modal.querySelector('#crx-save'); if (s2) s2.disabled = true;
+      });
+  }
+  function saveLimit() {
+    if (!isAdmin()) return;
+    var v = Number(modal.querySelector('#crx-limit').value);
+    if (!Number.isInteger(v) || v < 1 || v > 99) { say('Informe um número inteiro entre 1 e 99.', 'error'); return; }
+    var btn = modal.querySelector('#crx-savelimit');
+    btn.disabled = true;
+    api('/rest/v1/configuracoes?on_conflict=chave', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: { chave: 'encaixe_limite_diario', valor: String(v) }
+    })
+      .then(function () {
+        currentLimit = v;
+        say('Limite atualizado para ' + v + ' Encaixe(s) por dia. Vale para todos os profissionais e as duas telas.', 'ok');
+        return checkDay();
+      })
+      .catch(function (e) { say('Não foi possível salvar o limite: ' + (e && e.message ? e.message : e), 'error'); })
+      .then(function () { btn.disabled = false; });
+  }
+
+  /* ---------------- gravação ---------------- */
+  function saveEncaixe() {
+    if (!modal) return;
+    var date = modal.querySelector('#crx-date').value;
+    var time = modal.querySelector('#crx-time').value || null;
+    var typeId = modal.querySelector('#crx-type').value;
+    var profId = modal.querySelector('#crx-prof').value || null;
+    var notes = modal.querySelector('#crx-notes').value.trim();
+    if (!date || !selectedUser || !typeId) {
+      say('Preencha a data, selecione o cidadão e escolha o tipo de atendimento.', 'error');
+      return;
+    }
+    var btn = modal.querySelector('#crx-save');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    var cidadao = selectedUser;
+    function gravar() {
+      return api('/rest/v1/rpc/cras_registrar_encaixe', {
+        method: 'POST',
+        prefer: 'return=minimal',
+        body: { p_data: date, p_horario: time, p_tipo_id: typeId, p_profissional_id: profId, p_usuario_id: cidadao.id, p_observacoes: notes }
+      });
+    }
+    function gravarDireto() {
+      return api('/rest/v1/atendimentos', {
+        method: 'POST',
+        prefer: 'return=minimal',
+        body: {
+          data: date, horario: time, tipo_id: typeId, profissional_id: profId,
+          usuario_id: cidadao.id,
+          observacoes: MARK + (notes ? ' ' + notes : ''),
+          status: 'agendado'
+        }
+      });
+    }
+    checkDay()
+      .then(function () {
+        if (closedReason) throw new Error(closedReason);
+        if (currentCount >= currentLimit) throw new Error('Limite diário de Encaixes atingido (' + currentCount + '/' + currentLimit + ').');
+        return gravar().catch(function (e) {
+          var semFuncao = e && (e.code === 'PGRST202' || e.status === 404 || /could not find the function|function.*not found|schema cache/i.test(e.message || ''));
+          if (!semFuncao) throw e;
+          /* Plano B (função do banco ainda não instalada): confere de novo e grava direto. */
+          return Promise.all([getClosedReason(date), countEncaixes(date), getLimit()]).then(function (r) {
+            if (r[0]) throw new Error(r[0]);
+            if (r[1] >= r[2]) throw new Error('Limite diário de Encaixes atingido (' + r[1] + '/' + r[2] + ').');
+            return gravarDireto();
+          });
+        });
+      })
+      .then(function () {
+        say('Encaixe registrado com sucesso. Atualizando a tela...', 'ok');
+        btn.textContent = 'Registrado';
+        setTimeout(function () { window.location.reload(); }, 900);
+      })
+      .catch(function (e) {
+        say(e && e.message ? e.message : 'Não foi possível registrar o Encaixe.', 'error');
+        btn.disabled = false; btn.textContent = 'Salvar Encaixe';
+      });
+  }
+
+  /* ---------------- início ---------------- */
+  function loadProfile() {
+    if (!accessToken()) { authUser = null; profile = null; return Promise.resolve(null); }
+    return api('/auth/v1/user').then(function (r) {
+      authUser = (r && r.data && r.data.id) ? r.data : null;
+      if (!authUser) { profile = null; return null; }
+      return api('/rest/v1/profiles?select=id,nome,perfil&id=eq.' + enc(authUser.id) + '&limit=1')
+        .then(function (p) { profile = (p && p.data && p.data[0]) || null; })
+        .catch(function () { profile = null; });
+    }).catch(function () {
+      authUser = null; profile = null; return null;
+    });
+  }
+  /* ---------------- início ---------------- */
+  /* Usa a MESMA conexão que o sistema já abriu (mesma sessão de login). */
+  function findClient() { return window.__crasSupabase || null; }
+  var bootTries = 0, profileLoaded = false;
+  function boot() {
+    if (!sb) sb = findClient();
+    if (!window.__crasEncaixeStarted && (sb || accessToken())) {
+      window.__crasEncaixeStarted = true;
+      window.__crasEncaixeReady = true;
+      try { window.dispatchEvent(new CustomEvent('cras-encaixe-ok')); } catch (e) {}
+      if (sb && sb.auth && typeof sb.auth.onAuthStateChange === 'function') {
+        try {
+          sb.auth.onAuthStateChange(function (_evt, session) {
+            authUser = (session && session.user) || null;
+            loadProfile().then(function () { profileLoaded = !!authUser; refreshCounter(); }).catch(function () {});
+          });
+        } catch (e) {}
+      }
+    }
+    if (!profileLoaded && accessToken()) {
+      loadProfile().then(function () {
+        if (authUser) { profileLoaded = true; refreshCounter(); }
+      }).catch(function () {});
+    }
+    try { syncButton(); } catch (e) {}
+    if (!profileLoaded && bootTries++ < 60) setTimeout(boot, 500);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  watchNavigation();
+  watchDom();
+  setInterval(function () { if (!window.__crasEncaixeStarted && (sb || accessToken())) { bootTries = 0; boot(); } if (currentRoute()) refreshCounter(); }, 60000);
+  ['focus', 'visibilitychange'].forEach(function (ev) {
+    try { window.addEventListener(ev, function () { if (!profileLoaded) boot(); if (currentRoute()) refreshCounter(); }); } catch (e) {}
+  });
+})();
+
+    </script>
+    <script>
+/* CRAS Delfinópolis — Fotos de perfil (avatares)
+   Módulo complementar: abre a janela "Escolha sua Foto" ao clicar no rodapé do menu
+   (onde aparece o nome do usuário) e guarda a escolha na coluna avatar_url do perfil.
+*/
+(function () {
+  'use strict';
+  if (window.__crasAvatarLoaded) return;
+  window.__crasAvatarLoaded = true;
+
+  var CSS_ID = 'crx-av-styles';
+  var css = '.crx-av-ov{position:fixed;inset:0;z-index:2147483400;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:14px}'
+    + '.crx-av-modal{width:min(600px,calc(100vw - 28px));max-height:min(640px,calc(100vh - 28px));display:flex;flex-direction:column;background:#fff;border-radius:18px;box-shadow:0 25px 80px rgba(0,0,0,.3);overflow:hidden;font-family:inherit;color:#1f2937}'
+    + '.crx-av-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid #f1f5f9}'
+    + '.crx-av-head h3{margin:0;font-size:18px;font-weight:800;color:#1f2937;display:flex;align-items:center;gap:8px}'
+    + '.crx-av-x{border:0;background:#f1f5f9;color:#64748b;width:34px;height:34px;border-radius:9px;font-size:20px;line-height:1;cursor:pointer}'
+    + '.crx-av-body{padding:16px 20px;overflow:auto}'
+    + '.crx-av-top{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:16px}'
+    + '.crx-av-top span{font-size:11px;color:#94a3b8}'
+    + '.crx-av-lab{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px}'
+    + '.crx-av-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:6px}'
+    + '.crx-av-item{position:relative;aspect-ratio:1/1;border-radius:9999px;overflow:hidden;padding:2px;border:2px solid transparent;background:#fff;cursor:pointer;transition:.15s}'
+    + '.crx-av-item:hover{border-color:#a7f3d0;transform:translateY(-1px)}'
+    + '.crx-av-item.sel{border-color:#059669;box-shadow:0 0 0 3px #a7f3d0}'
+    + '.crx-av-item img{width:100%;height:100%;object-fit:contain;border-radius:9999px;display:block;background:#fff}'
+    + '.crx-av-item .ok{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,150,105,.35);color:#fff;font-weight:900;font-size:20px}'
+    + '.crx-av-linkrow{display:flex;gap:8px}'
+    + '.crx-av-linkrow input{flex:1;min-width:0;padding:11px 12px;border:2px solid #e2e8f0;border-radius:11px;font-size:13px;background:#f8fafc;outline:none}'
+    + '.crx-av-linkrow input:focus{border-color:#10b981;background:#fff}'
+    + '.crx-av-file{display:inline-flex;align-items:center;gap:6px;padding:11px 12px;border-radius:11px;background:#ecfdf5;border:2px solid #a7f3d0;color:#047857;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}'
+    + '.crx-av-foot{display:flex;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid #f1f5f9;background:#fff}'
+    + '.crx-av-b{border:0;border-radius:11px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer}'
+    + '.crx-av-b.rm{background:#fef2f2;color:#be123c;border:1px solid #fecdd3}'
+    + '.crx-av-b.no{background:#fff;color:#475569;border:1px solid #cbd5e1}'
+    + '.crx-av-b.ok{background:#059669;color:#fff;box-shadow:0 4px 12px rgba(5,150,105,.25)}'
+    + '.crx-av-b:disabled{opacity:.55;cursor:not-allowed}'
+    + '@media(max-width:420px){.crx-av-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}';
+  function addCss() {
+    if (document.getElementById(CSS_ID)) return;
+    var st = document.createElement('style');
+    st.id = CSS_ID; st.textContent = css; document.head.appendChild(st);
+  }
+
+  var sb = null, profile = null;
+
+  /* -------- avatares prontos (embutidos) -------- */
+  /* avatares prontos */
+  const lc="preset:";const Jd_fem=new Set(["02","04","06","07","09","11","14","16","18","20","21","23"]);const Yf=Array.from({length:24},(a,e)=>{const t=String(e+1).padStart(2,"0");return{id:`${lc}${t}`,src:`/avatares/avatar-${t}.png`,g:Jd_fem.has(t)?"f":"m"}});function Kd_gen(a){if(!a)return null;let e=(""+a).trim().split(/\s+/)[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");if(!e)return null;const F=new Set(["ana","beatriz","isabel","raquel","rute","ruth","ester","esther","miriam","ines","ingrid","eloa","agatha","yasmin","carmen","sol","liz","mel","lais","pietra","heloa","abigail","estela","iris","pilar","flor","nair","mercedes","lourdes","karen","caren"]),W=new Set(["jose","andre","felipe","guilherme","henrique","vicente","wallace","nicolas","lazaro","luca","elias","tobias","dinis","jonas","moises","isaias","noe","juca","jorge","jaime","cesar","heitor","ruy","levi","davi","kaua","enzo"]);if(W.has(e))return"m";if(F.has(e))return"f";if(e.endsWith("a"))return"f";if(e.endsWith("o"))return"m";if(/[lrznms]$/.test(e))return"m";return null}
+function Jf(a){return a?a.startsWith(lc)?`/avatares/avatar-${a.slice(lc.length)}.png`:a:null}
+function Kd_fix(nome,url){if(!url||typeof url!="string"||!url.startsWith(lc))return url;const nn=url.slice(lc.length),g=Kd_gen(nome);if(!g)return url;const isFem=Jd_fem.has(nn);if(g==="f"&&isFem||g==="m"&&!isFem)return url;const fem=["02","04","06","07","09","11","14","16","18","20","21","23"],male=["01","03","05","08","10","12","13","15","17","19","22","24"],pool=g==="f"?fem:male,s=""+(nome||"");let h=0;for(let k=0;k<s.length;k++)h=(h*31+s.charCodeAt(k))>>>0;return lc+pool[h%pool.length]}
+function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);return e.length===0?"U":e.length===1?e[0][0].toUpperCase():(e[0][0]+e[e.length-1][0]).toUpperCase()}
+
+  /* -------- ligação com o sistema -------- */
+  function findClient() {
+    return window.__crasSupabase || null;
+  }
+  function readProfile() {
+    if (!sb || !sb.auth || typeof sb.auth.getUser !== 'function') return Promise.resolve(null);
+    return sb.auth.getUser().then(function (r) {
+      var u = r && r.data && r.data.user;
+      if (!u) return null;
+      return sb.from('profiles').select('id,nome,perfil,avatar_url').eq('id', u.id).maybeSingle()
+        .then(function (p) { profile = (p && p.data) || null; return profile; });
+    });
+  }
+
+  /* -------- janela -------- */
+  var ov = null;
+  function close() { if (ov && ov.parentNode) ov.parentNode.removeChild(ov); ov = null; }
+  function open() {
+    addCss();
+    readProfile().then(function (p) { if (!p) return; draw(p); }).catch(function () { draw(null); });
+  }
+  function initials(nome) {
+    if (!nome) return 'U';
+    var w = nome.trim().split(/\s+/).filter(Boolean);
+    if (!w.length) return 'U';
+    if (w.length === 1) return w[0].charAt(0).toUpperCase();
+    return (w[0].charAt(0) + w[w.length - 1].charAt(0)).toUpperCase();
+  }
+  function previewBox(name, url, size) {
+    var shown = Jf(Kd_fix(name, url));
+    var d = document.createElement('div');
+    d.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:9999px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#059669,#0f766e);color:#fff;font-weight:800;font-size:' + Math.round(size * 0.38) + 'px';
+    if (shown) {
+      var img = document.createElement('img');
+      img.src = shown; img.alt = name || 'Usuario';
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;background:#fff';
+      img.onerror = function () { d.removeChild(img); d.textContent = initials(name); };
+      d.appendChild(img);
+    } else { d.textContent = initials(name); }
+    return d;
+  }
+  function draw(p) {
+    close();
+    var nome = (p && p.nome) || '';
+    var saved = (p && p.avatar_url) || '';
+    var guess = Kd_gen(nome);
+    var chosen = saved;
+    if (!chosen && /^preset:/.test(saved || '')) chosen = saved;
+    if (!chosen) {
+      var sug = guess ? Yf.filter(function (x) { return x.g === guess; })[0] : null;
+      chosen = sug ? sug.id : '';
+    }
+
+    ov = document.createElement('div');
+    ov.className = 'crx-av-ov';
+    var box = document.createElement('div');
+    box.className = 'crx-av-modal';
+
+    /* cabeçalho */
+    var head = document.createElement('div');
+    head.className = 'crx-av-head';
+    var t = document.createElement('h3');
+    t.textContent = 'Escolha sua Foto';
+    var x = document.createElement('button');
+    x.type = 'button'; x.className = 'crx-av-x'; x.innerHTML = '&times;';
+    x.addEventListener('click', close);
+    head.appendChild(t); head.appendChild(x);
+
+    /* corpo */
+    var body = document.createElement('div');
+    body.className = 'crx-av-body';
+    var top = document.createElement('div');
+    top.className = 'crx-av-top';
+    var prevWrap = document.createElement('div');
+    top.appendChild(prevWrap);
+    var cap = document.createElement('span'); cap.textContent = 'Pré-visualização'; top.appendChild(cap);
+    body.appendChild(top);
+
+    var lab = document.createElement('p');
+    lab.className = 'crx-av-lab';
+    lab.textContent = 'Avatares prontos (sugeridos pelo nome vêm primeiro):';
+    body.appendChild(lab);
+
+    var grid = document.createElement('div');
+    grid.className = 'crx-av-grid';
+    body.appendChild(grid);
+
+    var list = Yf.slice().sort(function (A, B) {
+      if (!guess) return 0;
+      return (A.g === guess ? 0 : 1) - (B.g === guess ? 0 : 1);
+    });
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Colar link de imagem (https://...)';
+
+    function sync() {
+      while (prevWrap.firstChild) prevWrap.removeChild(prevWrap.firstChild);
+      prevWrap.appendChild(previewBox(nome, chosen, 88));
+      if (input) {
+        var isLink = /^(https?:|data:)/i.test(chosen || '');
+        input.value = isLink ? chosen : '';
+      }
+      var items = grid.children;
+      for (var i = 0; i < items.length; i++) {
+        var on = items[i].getAttribute('data-id') === chosen;
+        items[i].className = 'crx-av-item' + (on ? ' sel' : '');
+        var tick = items[i].querySelector('.ok');
+        if (on && !tick) { var s = document.createElement('span'); s.className = 'ok'; s.textContent = '✓'; items[i].appendChild(s); }
+        if (!on && tick) items[i].removeChild(tick);
+      }
+    }
+    list.forEach(function (a) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'crx-av-item'; b.setAttribute('data-id', a.id);
+      b.title = 'Avatar ' + a.id.slice(7);
+      var im = document.createElement('img');
+      im.src = a.src; im.alt = '';
+      im.onerror = function () { b.style.background = '#f1f5f9'; };
+      b.appendChild(im);
+      b.addEventListener('click', function () { chosen = a.id; sync(); });
+      grid.appendChild(b);
+    });
+
+    var lab2 = document.createElement('p');
+    lab2.className = 'crx-av-lab';
+    lab2.style.marginTop = '16px';
+    lab2.textContent = 'Ou use o link de uma imagem sua:';
+    body.appendChild(lab2);
+
+    var row = document.createElement('div');
+    row.className = 'crx-av-linkrow';
+    input.addEventListener('input', function () { chosen = input.value.trim(); sync(); });
+    row.appendChild(input);
+
+    var lbl = document.createElement('label');
+    lbl.className = 'crx-av-file';
+    lbl.appendChild(document.createTextNode('Arquivo'));
+    var file = document.createElement('input');
+    file.type = 'file'; file.accept = 'image/*'; file.style.display = 'none';
+    file.addEventListener('change', function () {
+      var f = file.files && file.files[0];
+      if (!f) return;
+      var fr = new FileReader();
+      fr.onload = function () { chosen = String(fr.result || ''); sync(); };
+      fr.readAsDataURL(f);
+    });
+    lbl.appendChild(file);
+    row.appendChild(lbl);
+    body.appendChild(row);
+
+    /* rodapé */
+    var foot = document.createElement('div');
+    foot.className = 'crx-av-foot';
+    var rm = document.createElement('button');
+    rm.type = 'button'; rm.className = 'crx-av-b rm'; rm.textContent = 'Remover foto';
+    rm.addEventListener('click', function () { save(null, rm); });
+    var spacer = document.createElement('div');
+    spacer.style.cssText = 'flex:1;display:flex;justify-content:flex-end;gap:8px';
+    var no = document.createElement('button');
+    no.type = 'button'; no.className = 'crx-av-b no'; no.textContent = 'Cancelar';
+    no.addEventListener('click', close);
+    var ok = document.createElement('button');
+    ok.type = 'button'; ok.className = 'crx-av-b ok'; ok.textContent = 'Salvar foto';
+    ok.addEventListener('click', function () {
+      if (!p) { close(); return; }
+      save(chosen ? Kd_fix(nome, chosen) : null, ok);
+    });
+    spacer.appendChild(no); spacer.appendChild(ok);
+    foot.appendChild(rm); foot.appendChild(spacer);
+
+    box.appendChild(head); box.appendChild(body); box.appendChild(foot);
+    ov.appendChild(box);
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    document.body.appendChild(ov);
+    sync();
+
+    function save(value, btnEl) {
+      if (!sb || !p) return;
+      var old = btnEl && btnEl.textContent;
+      if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Salvando...'; }
+      sb.from('profiles').update({ avatar_url: value }).eq('id', p.id).then(function (r) {
+        if (r && r.error) throw r.error;
+        p.avatar_url = value;
+        try { window.dispatchEvent(new CustomEvent('cras-perfil-atualizado')); } catch (e) {}
+        var av = document.querySelector('.crx-av-btn');
+        if (av) av._refresh();
+        close();
+      }).catch(function (err) {
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = old; }
+        alert('Não foi possível salvar a foto: ' + ((err && err.message) || 'verifique a conexão.'));
+      });
+    }
+  }
+
+  /* -------- botão no rodapé do menu -------- */
+  var chosenBtn = null;
+  function norm(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+  function findNameButton() {
+    if (!profile || !profile.nome) return null;
+    var target = norm(profile.nome);
+    var btns = document.querySelectorAll('button,a,div[role="button"]');
+    for (var i = 0; i < btns.length; i++) {
+      var b = btns[i];
+      if (b.closest && b.closest('.crx-av-btn')) continue;
+      if (b.children && b.children.length > 4) continue;
+      var nm = b.querySelector ? b.querySelector('.cras-perfil-nome') : null;
+      var txt = norm(nm ? nm.textContent : b.textContent);
+      if (!txt) continue;
+      if (txt === target || txt.indexOf(target + ' toque') === 0 || txt.indexOf(target + ' perfil') === 0) return b;
+    }
+    return null;
+  }
+  function decorate(btn) {
+    if (!btn || btn === chosenBtn) return;
+    if (btn.__crxAvDone) return;
+    btn.__crxAvDone = true;
+    chosenBtn = btn;
+    btn.classList.add('crx-av-btn');
+    btn.setAttribute('title', 'Meu perfil / Foto');
+    btn.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      open();
+    }, true);
+
+    var holder = document.createElement('span');
+    holder.style.cssText = 'display:inline-flex;align-items:center;border-radius:9999px;overflow:hidden;flex:none';
+    btn.insertBefore(holder, btn.firstChild);
+
+    function refresh() {
+      holder.innerHTML = '';
+      var url = Jf(Kd_fix(profile.nome, profile.avatar_url));
+      var size = 30;
+      var box = document.createElement('span');
+      box.style.cssText = 'width:' + size + 'px;height:' + size + 'px;border-radius:9999px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#059669,#0f766e);color:#fff;font-weight:800;font-size:' + Math.round(size * 0.38) + 'px;flex:none';
+      if (url) {
+        var img = document.createElement('img');
+        img.src = url; img.alt = profile.nome || '';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;background:#fff';
+        img.onerror = function () { box.removeChild(img); box.textContent = initials(profile.nome); };
+        box.appendChild(img);
+      } else { box.textContent = initials(profile.nome); }
+      holder.appendChild(box);
+    }
+    btn._refresh = refresh;
+    refresh();
+  }
+  function scan() {
+    if (!sb) { sb = findClient(); if (!sb) return; }
+    if (!profile) { readProfile().then(function () { scan(); }).catch(function () {}); return; }
+    var b = findNameButton();
+    if (b && !b.__crxAvDone) decorate(b);
+  }
+  function boot() {
+    addCss();
+    scan();
+    setInterval(function () { try { scan(); } catch (e) {} }, 2500);
+    try {
+      new MutationObserver(function () { try { scan(); } catch (e) {} })
+        .observe(document.body || document.documentElement, { childList: true, subtree: true });
+    } catch (e) {}
+    window.addEventListener('cras-supabase-ready', function () { sb = findClient(); scan(); });
+    window.addEventListener('cras-perfil-atualizado', function () { try { if (chosenBtn && chosenBtn._refresh) chosenBtn._refresh(); } catch (e) {} });
+  }
+  window.__crasAvatarOpen = open;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+
+    </script>
   </body>
 </html>
