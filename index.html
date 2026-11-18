@@ -295,11 +295,11 @@
         .splash-progress.indeterminate .splash-fill { animation: none; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index.js?v=v165"></script>
+    <script type="module" crossorigin src="/assets/index.js?v=v166"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor.js">
     <link rel="modulepreload" crossorigin href="/assets/charts.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase.js">
-    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v165">
+    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v166">
   </head>
   <body>
     <!-- Tela de abertura: logotipo original preservado + barra de progresso REAL.
@@ -1013,7 +1013,7 @@
     </script>
     <!-- O pacote principal do app carrega DEPOIS que a API da tela de abertura
          (window.__crasSplash) já está definida acima, evitando a tela presa em 0%. -->
-    <script src="/assets/supabase.js?v=v165" type="module"></script>
+    <script src="/assets/supabase.js?v=v166" type="module"></script>
     <script>
 /* CRAS Delfinópolis — Encaixe (v164)
    Módulo complementar: NÃO substitui nenhuma tela do sistema.
@@ -1059,17 +1059,16 @@
    + '.crx-cfgbtn{border:1px solid #dbeafe;background:#eff6ff;color:#1d4ed8;border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer}'
    + '.crx-cfg{display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:11px;padding:14px;margin-top:14px}.crx-cfg.open{display:block}'
    + '@media(max-width:560px){.crx-grid{grid-template-columns:1fr}.crx-f.full{grid-column:auto}.crx-body{padding:17px}.crx-head{padding:17px}.crx-foot{padding:14px 17px 18px}.crx-btn{padding:8px 11px}}';
-  css += '.crx-hbtn-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto;min-width:0;order:9}'
-   + '.crx-hbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 16px;border:0;border-radius:8px;background:#1a5276;color:#fff;font-family:inherit;font-size:14px;font-weight:500;line-height:1;cursor:pointer;white-space:nowrap;transition:background .15s ease}'
-   + '.crx-hbtn:hover{background:#21618c}'
-   + '.crx-hbtn:active{background:#154360}'
-   + '.crx-hbtn:focus-visible{outline:2px solid #1a5276;outline-offset:2px}'
+  css += '.crx-hbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:8px;background:#e67e22;color:#fff;font-family:inherit;font-size:12px;font-weight:500;line-height:1.333;padding:6px 12px;cursor:pointer;white-space:nowrap;transition:background .15s ease;vertical-align:middle}'
+   + '.crx-hbtn:hover{background:#d35400}'
+   + '.crx-hbtn:active{background:#bf4800}'
+   + '.crx-hbtn:focus-visible{outline:2px solid #e67e22;outline-offset:2px}'
    + '.crx-hbtn-ico{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}'
-   + '.crx-hbtn-count{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;background:rgba(255,255,255,.2);font-size:11.5px;font-weight:700;letter-spacing:.2px}'
-   + '.crx-hbtn.full{background:#b45309}'
-   + '.crx-hbtn.full:hover{background:#92400e}'
-   + '.crx-hbtn.full .crx-hbtn-count{background:rgba(255,255,255,.25)}'
-   + '@media(max-width:560px){.crx-hbtn-wrap{width:100%;margin-left:0!important;gap:8px}.crx-hbtn{height:38px;padding:0 16px;font-size:13.5px;flex:1 1 auto;width:100%}}'
+   + '.crx-hbtn-count{display:inline-flex;align-items:center;height:16px;padding:0 5px;border-radius:999px;background:rgba(255,255,255,.24);font-size:10.5px;font-weight:700;letter-spacing:.2px}'
+   + '.crx-hbtn.full{background:#c0392b}'
+   + '.crx-hbtn.full:hover{background:#a93226}'
+   + '.crx-hbtn.full .crx-hbtn-count{background:rgba(255,255,255,.28)}'
+   + '.crx-setmsg{font-size:12px;margin-top:10px;min-height:16px}';
   var st = document.createElement('style');
   st.id = 'crx-styles'; st.textContent = css; document.head.appendChild(st);
 
@@ -1098,7 +1097,7 @@
      O botão tem lugar próprio: um botão fixo criado por este módulo, sempre no
      mesmo canto da tela. Não depende de existir título, campo de data ou botão
      na tela do sistema, por isso aparece igual em Agenda e em Atendimentos do dia. */
-  var hbtn = null, hbadge = null, lastRoute = '', btnTick = null, domObs = null;
+  var hbtn = null, hcount = null, lastRoute = '', btnTick = null, domObs = null;
 
   function currentRoute() {
     var path = '', hash = '';
@@ -1108,13 +1107,22 @@
     path = path.split('?')[0].replace(/\/+$/, '');
     if (/\/atendimentos$/i.test(path)) return 'atendimentos';
     if (/\/agenda$/i.test(path)) return 'agenda';
+    if (/\/configuracoes$/i.test(path)) return 'config';
     return '';
   }
 
   function setCounter(txt, full) {
-    if (hbadge) hbadge.textContent = txt;
-    if (hbtn) hbtn.className = 'crx-hbtn' + (full ? ' full' : '');
+    if (hcount) hcount.textContent = String(txt).replace(/\s*hoje\s*$/i, '');
+    if (hbtn) {
+      hbtn.className = 'crx-hbtn' + (full ? ' full' : '');
+      hbtn.title = 'Encaixe: ' + txt + ' (registrar atendimento fora da agenda)';
+    }
+    var now = document.getElementById('crx-set-now');
+    if (now) now.textContent = 'Hoje: ' + String(txt).replace(/\s*hoje\s*$/i, '') + '.';
   }
+
+  var ICON_PLUS = '<span class="crx-hbtn-ico" aria-hidden="true">'
+    + '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>';
 
   function buildButton() {
     var b = document.createElement('button');
@@ -1122,70 +1130,55 @@
     b.id = 'crx-btn';
     b.className = 'crx-hbtn';
     b.title = 'Registrar atendimento fora da agenda (Encaixe)';
-    b.setAttribute('aria-label', 'Encaixe');
-    b.innerHTML = '<span class="crx-hbtn-ico" aria-hidden="true">'
-      + '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>'
-      + '</span><span class="crx-hbtn-lbl">Encaixe</span>'
-      + '<span class="crx-hbtn-count">0/' + currentLimit + ' hoje</span>';
+    b.innerHTML = ICON_PLUS + '<span>Encaixe</span><span class="crx-hbtn-count">0/3</span>';
     b.addEventListener('click', openModal);
     hbtn = b;
-    hbadge = b.querySelector('.crx-hbtn-count');
+    hcount = b.querySelector('.crx-hbtn-count');
     return b;
   }
 
-  /* Acha a faixa de título da tela atual (onde ficam o nome da tela e os botões). */
-  function headerRow() {
-    var h1s = document.querySelectorAll('h1'), i, t, host, row;
+  /* Em "Atendimentos do dia": fica junto do campo de data, na mesma altura. */
+  function headerSlot() {
+    var h1s = document.querySelectorAll('h1'), i, j, t, host, row, c;
     for (i = 0; i < h1s.length; i++) {
       t = String(h1s[i].textContent || '').replace(/\s+/g, ' ').trim();
-      if (!/^Atendimentos do dia$/i.test(t) && !/^Agenda$/i.test(t)) continue;
+      if (!/^Atendimentos do dia$/i.test(t)) continue;
       host = h1s[i].parentElement;
       row = host && host.parentElement;
-      if (row && row.children && row.children.length) return { row: row, host: host };
+      if (!row) continue;
+      for (j = 0; j < row.children.length; j++) {
+        c = row.children[j];
+        if (c === host) continue;
+        if (c.querySelector && c.querySelector('input')) return c;
+      }
+      return row;
     }
     return null;
   }
 
-  /* Coloca o botão na mesma faixa dos botões do sistema, alinhado à direita. */
-  function placeButton() {
-    var h = headerRow();
-    if (!h) return false;
-    var wrap = h.row.querySelector('.crx-hbtn-wrap');
-    if (wrap && wrap.parentNode !== h.row) wrap = null;
-    if (!hbtn) buildButton();
-    if (wrap && wrap.contains(hbtn)) {
-      if (h.row.lastElementChild !== wrap) h.row.appendChild(wrap);
-      packRight(h.row, h.host, wrap);
-      return true;
-    }
-    if (!wrap) {
-      wrap = document.createElement('div');
-      wrap.className = 'crx-hbtn-wrap';
-      var kids = [], i;
-      for (i = 0; i < h.row.children.length; i++) {
-        if (h.row.children[i] !== h.host && h.row.children[i] !== hbtn) kids.push(h.row.children[i]);
+  /* Na Agenda: fica junto dos botões "Fechar Dia / Marcar Distrito / Reabrir Dia". */
+  function panelSlot() {
+    var asides = document.querySelectorAll('aside[role="dialog"]'), i, j, rows;
+    for (i = 0; i < asides.length; i++) {
+      rows = asides[i].querySelectorAll('div.flex.flex-wrap.gap-2');
+      for (j = 0; j < rows.length; j++) {
+        if (/Reabrir Dia/i.test(rows[j].textContent || '')) return rows[j];
       }
-      for (i = 0; i < kids.length; i++) wrap.appendChild(kids[i]);
-      h.row.appendChild(wrap);
     }
-    wrap.appendChild(hbtn);
-    packRight(h.row, h.host, wrap);
-    return true;
+    return null;
   }
 
-  /* Mantém o botão colado ao lado dos botões do sistema, ambos à direita. */
-  function packRight(row, host, wrap) {
-    var kids = row.children, i, first = null;
-    for (i = 0; i < kids.length; i++) {
-      if (kids[i] === host || kids[i] === wrap) continue;
-      first = kids[i];
-      break;
+  function placeButton() {
+    if (!hbtn) buildButton();
+    var route = currentRoute(), slot = null;
+    if (route === 'atendimentos') slot = headerSlot();
+    else if (route === 'agenda') slot = panelSlot();
+    if (!slot) {
+      if (hbtn.parentNode) hbtn.parentNode.removeChild(hbtn);
+      return false;
     }
-    for (i = 0; i < kids.length; i++) {
-      if (kids[i] === host || kids[i] === wrap) continue;
-      try { kids[i].style.marginLeft = (kids[i] === first) ? 'auto' : ''; } catch (e) {}
-    }
-    try { wrap.style.marginLeft = first ? '10px' : ''; } catch (e) {}
+    if (hbtn.parentNode !== slot) slot.appendChild(hbtn);
+    return true;
   }
 
   function syncButton() {
@@ -1196,7 +1189,7 @@
       return;
     }
     if (!document.body) return;
-    if (!placeButton()) return;
+    placeButton();
     if (route !== lastRoute) {
       lastRoute = route;
       refreshCounter();
@@ -1204,9 +1197,119 @@
     }
   }
 
+  /* ---------------- aba de configuração (Configurações > Vagas por Dia) ---------------- */
+  function activeTabName() {
+    var bar = document.querySelector('.cras-tabs-bar');
+    if (!bar) return '';
+    var bs = bar.querySelectorAll('button'), i;
+    for (i = 0; i < bs.length; i++) {
+      if (/border-primary/.test(String(bs[i].className || ''))) return String(bs[i].textContent || '').trim();
+    }
+    return '';
+  }
+
+  function configPanel() {
+    var all = document.querySelectorAll('.page-container div.space-y-4'), i, el, r, area;
+    var best = null, bestArea = 1e12;
+    for (i = 0; i < all.length; i++) {
+      el = all[i];
+      if (!/Configurações Gerais de Vagas/i.test(el.textContent || '')) continue;
+      r = el.getBoundingClientRect();
+      if (r.width < 40 || r.height < 10) continue;
+      area = r.width * r.height;
+      if (area < bestArea) { bestArea = area; best = el; }
+    }
+    return best;
+  }
+
+  function buildConfigCard() {
+    var card = document.createElement('div');
+    card.id = 'crx-cfg-card';
+    card.className = 'card p-6 p-5';
+    card.innerHTML = ''
+      + '<div class="flex items-center gap-2 mb-1">'
+      + '  <span class="text-primary" style="display:inline-flex;color:#1a5276">'
+      + '    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>'
+      + '  </span>'
+      + '  <h3 class="font-semibold text-gray-700">Encaixe (atendimento fora da agenda)</h3>'
+      + '</div>'
+      + '<p class="text-xs text-gray-400 mb-4">Quantidade máxima de Encaixes que podem ser registrados por dia, somando todos os profissionais. Ao atingir o limite, o botão Encaixe bloqueia até alguém cancelar um Encaixe do mesmo dia.</p>'
+      + '<div class="flex items-center gap-4">'
+      + '  <div class="flex-1 min-w-0">'
+      + '    <label class="block text-sm font-medium text-gray-700" for="crx-set-limit">Encaixes por dia</label>'
+      + '    <p class="text-xs text-gray-400" id="crx-set-now" style="margin-top:2px">—</p>'
+      + '  </div>'
+      + '  <input id="crx-set-limit" type="number" min="1" max="99" step="1" value="3" class="border rounded-lg px-3 py-2 text-sm text-center" style="width:80px">'
+      + '  <button id="crx-set-save" type="button" class="inline-flex items-center justify-center font-medium rounded-lg transition-all bg-primary text-white px-4 py-2 text-sm gap-2" style="background:#1a5276">Salvar</button>'
+      + '</div>'
+      + '<p id="crx-set-msg" class="crx-setmsg"></p>';
+    card.querySelector('#crx-set-save').addEventListener('click', saveLimitFromConfig);
+    return card;
+  }
+
+  function saveLimitFromConfig() {
+    var inp = document.getElementById('crx-set-limit');
+    var msg = document.getElementById('crx-set-msg');
+    if (!inp || !msg) return;
+    var v = Number(inp.value);
+    if (!Number.isInteger(v) || v < 1 || v > 99) {
+      msg.style.color = '#b91c1c';
+      msg.textContent = 'Informe um número inteiro entre 1 e 99.';
+      return;
+    }
+    var btn = document.getElementById('crx-set-save');
+    if (btn) btn.disabled = true;
+    api('/rest/v1/configuracoes?on_conflict=chave', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: { chave: 'encaixe_limite_diario', valor: String(v) }
+    }).then(function () {
+      currentLimit = v;
+      msg.style.color = '#15803d';
+      msg.textContent = 'Limite salvo: ' + v + ' Encaixe(s) por dia. Vale para todos os profissionais e para as duas telas.';
+      refreshCounter();
+    }).catch(function (e) {
+      msg.style.color = '#b91c1c';
+      msg.textContent = 'Não foi possível salvar: ' + ((e && e.message) ? e.message : e);
+    }).then(function () { if (btn) btn.disabled = false; });
+  }
+
+  function syncConfig() {
+    var old = document.getElementById('crx-cfg-card');
+    var onVagas = currentRoute() === 'config' && /^Vagas por Dia$/i.test(activeTabName());
+    if (!onVagas) {
+      if (old && old.parentNode) old.parentNode.removeChild(old);
+      if (old) old.removeAttribute('id');
+      return;
+    }
+    var host = configPanel();
+    if (old && host && old.parentNode && old.parentNode !== host) { old.parentNode.removeChild(old); old.removeAttribute('id'); old = null; }
+    if (!host) return;
+    if (host.querySelector('#crx-cfg-card')) return;
+    var card = buildConfigCard(), anchor = null, i, kids = host.children;
+    for (i = 0; i < kids.length; i++) {
+      if (/^Configurações Gerais de Vagas/i.test(String(kids[i].textContent || '').trim())) { anchor = kids[i]; break; }
+    }
+    if (anchor && anchor.parentNode === host) host.insertBefore(card, anchor.nextSibling);
+    else host.appendChild(card);
+    var inp = document.getElementById('crx-set-limit');
+    if (inp) {
+      getLimit().then(function (lim) {
+        if (inp && !inp.dataset.touched) inp.value = String(lim);
+        refreshCounter();
+      }).catch(function () {});
+      inp.addEventListener('input', function () { inp.dataset.touched = '1'; });
+    }
+    if (card) refreshCounter();
+  }
+
   function nudge() {
     if (btnTick) return;
-    btnTick = setTimeout(function () { btnTick = null; try { syncButton(); } catch (e) {} }, 180);
+    btnTick = setTimeout(function () {
+      btnTick = null;
+      try { syncButton(); } catch (e) {} try { syncConfig(); } catch (e) {}
+      try { syncConfig(); } catch (e) {}
+    }, 180);
   }
 
   /* Se a tela se redesenhar, o botão volta para o lugar sozinho. */
@@ -1430,7 +1533,7 @@
     modal.querySelector('#crx-savelimit').addEventListener('click', saveLimit);
     var ver = document.createElement('span');
     ver.className = 'crx-ver';
-    ver.textContent = 'Encaixe v165';
+    ver.textContent = 'Encaixe v166';
     ver.style.cssText = 'font-size:10px;color:#94a3b8;font-weight:700;margin-right:8px;letter-spacing:.3px';
     modal.querySelector('#crx-admin').appendChild(ver);
     applyProfile();
@@ -1660,7 +1763,7 @@
         if (authUser) { profileLoaded = true; refreshCounter(); }
       }).catch(function () {});
     }
-    try { syncButton(); } catch (e) {}
+    try { syncButton(); } catch (e) {} try { syncConfig(); } catch (e) {}
     if (!profileLoaded && bootTries++ < 60) setTimeout(boot, 500);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
