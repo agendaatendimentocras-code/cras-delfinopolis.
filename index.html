@@ -295,11 +295,11 @@
         .splash-progress.indeterminate .splash-fill { animation: none; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index.js?v=v169"></script>
+    <script type="module" crossorigin src="/assets/index.js?v=v170"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor.js">
     <link rel="modulepreload" crossorigin href="/assets/charts.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase.js">
-    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v169">
+    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v170">
   </head>
   <body>
     <!-- Tela de abertura: logotipo original preservado + barra de progresso REAL.
@@ -1013,7 +1013,7 @@
     </script>
     <!-- O pacote principal do app carrega DEPOIS que a API da tela de abertura
          (window.__crasSplash) já está definida acima, evitando a tela presa em 0%. -->
-    <script src="/assets/supabase.js?v=v169" type="module"></script>
+    <script src="/assets/supabase.js?v=v170" type="module"></script>
     <script>
 /* CRAS Delfinópolis — Encaixe (v164)
    Módulo complementar: NÃO substitui nenhuma tela do sistema.
@@ -1548,7 +1548,7 @@
     modal.querySelector('#crx-savelimit').addEventListener('click', saveLimit);
     var ver = document.createElement('span');
     ver.className = 'crx-ver';
-    ver.textContent = 'Encaixe v169';
+    ver.textContent = 'Encaixe v170';
     ver.style.cssText = 'font-size:10px;color:#94a3b8;font-weight:700;margin-right:8px;letter-spacing:.3px';
     modal.querySelector('#crx-admin').appendChild(ver);
     applyProfile();
@@ -2115,7 +2115,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
 
     </script>
     <script>
-/* CRAS Delfinópolis — Regra do dia exclusivo de Benefícios BPC (v169)
+/* CRAS Delfinópolis — Regra do dia exclusivo de Benefícios BPC (v170)
    - Ao agendar um atendimento do tipo BPC, o dia passa a ser exclusivo desse serviço
    - Nos demais tipos, o dia fica bloqueado (a exceção é o Encaixe)
    - Aba "Benefícios BPC" em Configurações: liga/desliga a regra, escolhe o tipo e o limite por dia
@@ -2127,7 +2127,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
 
   var SB_URL = 'https://tizruuquhhpmykkjsmpn.supabase.co';
   var SB_KEY = 'sb_publishable_l-COxHSUAoiOf7PMXAb3SQ_ZWZk1v1w';
-  var VERSION = 'v169';
+  var VERSION = 'v170';
 
   var cfg = { enabled: true, limit: 4, tipoId: '' };
   var tipos = null, tiposAt = 0;
@@ -2642,8 +2642,9 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
 })();
 
 </script>
-  <!-- CRAS Delfinopolis - Avisos de mensagens do Chat (v169) -->
+  <!-- CRAS Delfinopolis - Avisos de mensagens do Chat (v170) -->
 <script>
+
 (function () {
   'use strict';
   if (window.__crxChat) return;
@@ -2652,8 +2653,8 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
   var URL_BASE = 'https://tizruuquhhpmykkjsmpn.supabase.co';
   var WS_BASE = 'wss://tizruuquhhpmykkjsmpn.supabase.co/realtime/v1/websocket';
   var ANON = 'sb_publishable_l-COxHSUAoiOf7PMXAb3SQ_ZWZk1v1w';
-  var POLL_OK = 9000;
-  var POLL_LIVE = 45000;
+  var POLL_OK = 6000;
+  var POLL_LIVE = 6000;
 
   var seen = {};
   var shown = {};
@@ -2685,7 +2686,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
     + '.crx-nudge button{font:600 12px system-ui,sans-serif;border:0;border-radius:8px;padding:7px 11px;cursor:pointer}'
     + '.crx-nudge .go{background:#38bdf8;color:#062033}'
     + '.crx-nudge .no{background:transparent;color:#c7d5e2}'
-    + '@media(max-width:640px){.crx-ct-wrap{top:auto;bottom:14px;right:10px;left:10px;width:auto}.crx-ct-t{-webkit-line-clamp:3}.crx-nudge{bottom:10px;padding:10px 12px;gap:8px}.crx-nudge span{font-size:12px}}';
+    + '@media(max-width:640px){.crx-ct-wrap{top:auto;bottom:58px;right:10px;left:10px;width:auto}.crx-ct-t{-webkit-line-clamp:3}.crx-nudge{bottom:10px;padding:10px 12px;gap:8px}.crx-nudge span{font-size:12px}}';
 
   function style() {
     if (document.getElementById('crx-ct-styles')) return;
@@ -2818,42 +2819,52 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
     } catch (e) {}
   }
 
+  var nativeStatus = 'Clique para testar o aviso neste computador.';
+  function statusNative(text) {
+    nativeStatus = text;
+    var el = document.getElementById('crx-native-status');
+    if (el) el.textContent = text;
+  }
+  function nativeRegistration() {
+    if (!navigator.serviceWorker) return Promise.reject(new Error('Este navegador não oferece notificações persistentes.'));
+    return navigator.serviceWorker.register('/sw.js', {updateViaCache:'none'}).then(function (reg) {
+      if (reg.active && reg.active.state === 'activated') return reg;
+      return new Promise(function (resolve, reject) {
+        var timeout = setTimeout(function () { reject(new Error('O serviço de avisos não ativou. Atualize a página e teste novamente.')); }, 15000);
+        navigator.serviceWorker.ready.then(function (ready) { clearTimeout(timeout); resolve(ready); }, function (err) { clearTimeout(timeout); reject(err); });
+      });
+    });
+  }
   function notifyNative(m) {
-    if (!('Notification' in window)) return;
-    if (Notification.permission !== 'granted') return;
+    if (!('Notification' in window)) {
+      statusNative('Notificações indisponíveis neste navegador. Use Chrome ou Edge atualizado.');
+      return Promise.resolve(false);
+    }
+    if (Notification.permission !== 'granted') {
+      statusNative(Notification.permission === 'denied' ? 'Bloqueado no navegador. Abra as configurações do site e permita Notificações.' : 'Clique em Ativar avisos e permita as notificações.');
+      return Promise.resolve(false);
+    }
     var title = 'CRAS · ' + (m.nome || 'Nova mensagem');
-    var body = (m.public ? 'Chat Geral: ' : 'Mensagem privada: ') + (m.texto || '');
-    var opts = { body: body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: 'cras-chat', data: { url: '/chat' }, requireInteraction: false, silent: false, vibrate: [180, 90, 180] };
-    try {
-      var regP = navigator.serviceWorker && navigator.serviceWorker.ready;
-      if (regP && regP.then) {
-        var done = false;
-        regP.then(function (reg) {
-          if (done) return;
-          done = true;
-          try { reg.showNotification(title, opts); } catch (e) { try { new Notification(title, opts); } catch (x) {} }
-        });
-        setTimeout(function () {
-          if (done) return;
-          done = true;
-          try { new Notification(title, opts); } catch (e) {}
-        }, 1500);
-        return;
-      }
-    } catch (e) {}
-    try { new Notification(title, opts); } catch (e) {}
+    var opts = {body:(m.public ? 'Chat Geral: ' : 'Mensagem privada: ') + (m.texto || ''), icon:'/icons/icon-192.png', badge:'/icons/icon-192.png', tag:'cras-chat-' + String(m.id || Date.now()), data:{url:'/chat'}, requireInteraction:true, silent:false};
+    return nativeRegistration().then(function (reg) {
+      return reg.showNotification(title, opts);
+    }).then(function () {
+      statusNative('O navegador aceitou o aviso. Confira o canto da tela ou a Central de Notificações (Win + N). Se não aparecer, verifique os banners do Chrome/Edge e Não perturbe no Windows.');
+      return true;
+    }).catch(function (error) {
+      statusNative('Falha ao enviar o aviso: ' + String(error && error.message || error));
+      return false;
+    });
   }
 
   function deliver(m, instant) {
     if (shown[m.id]) return;
     shown[m.id] = 1;
-    headline(unread + 1);
-    badge(unread);
     if (inChat() && !document.hidden) return;
+    notifyNative(m);
     if (document.hidden) {
       pending.push(m);
       if (pending.length > 6) pending = pending.slice(-6);
-      notifyNative(m);
       beep();
       return;
     }
@@ -2941,13 +2952,13 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
     if (!s || !s.access_token) return;
     if (!('WebSocket' in window)) return;
     try { if (ws) { ws.onclose = null; ws.close(); } } catch (e) {}
-    try { ws = new WebSocket(WS_BASE + '?apikey=' + encodeURIComponent(ANON) + '&vsn=1.0.0'); }
+    try { ws = new WebSocket(WS_BASE + '?apikey=' + encodeURIComponent(ANON) + '&vsn=2.0.0'); }
     catch (e) { wsLater(); return; }
     ws.onopen = function () {
       wsOpen = true; wsTries = 0; joined = false;
       clearTimeout(timer);
       timer = setTimeout(loop, 1500);
-      joinRef = String(refSeq++);
+      joinRef = String(refSeq);
       wsSend('realtime:chat-notifications-global', 'phx_join', {
         config: {
           broadcast: { ack: false, self: false },
@@ -2958,7 +2969,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
         access_token: s.access_token
       }, joinRef);
       if (beat) clearInterval(beat);
-      beat = setInterval(function () { wsSend('phoenix', 'heartbeat', {}, joinRef); }, 25000);
+      beat = setInterval(function () { wsSend('phoenix', 'heartbeat', {}, null); }, 25000);
       setTimeout(function () {
         if (joined) return;
         wsOpen = false;
@@ -2977,12 +2988,14 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
         if (rec) onRealtime(rec);
         return;
       }
-      if (event === 'phx_reply') {
+      var replyRef = Array.isArray(m) ? m[1] : m.ref;
+      if (event === 'phx_reply' && String(replyRef) === String(joinRef)) {
         if (payload && payload.status === 'ok') {
           wsTries = 0; joined = true; wsOpen = true;
           tick().catch(function () {});
         } else {
           joined = false; wsOpen = false;
+          statusNative('Canal de mensagens indisponível. A conferência automática continua ativa.');
           clearTimeout(timer);
           timer = setTimeout(loop, 2000);
         }
@@ -3016,29 +3029,35 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
   }
 
   function nudge() {
-    if (!('Notification' in window)) return;
-    if (Notification.permission !== 'default') return;
-    try {
-      var off = Number(localStorage.getItem('crx-chat-nudge-off') || 0);
-      if (off && Date.now() - off < 7 * 864e5) return;
-    } catch (e) {}
-    if (document.getElementById('crx-chat-nudge')) return;
-    var d = document.createElement('div');
-    d.id = 'crx-chat-nudge'; d.className = 'crx-nudge';
-    d.innerHTML = '<span>Receba avisos de mensagens mesmo com o sistema minimizado ou em outra aba.</span>'
-      + '<button type="button" class="go">Ativar avisos</button><button type="button" class="no">Agora não</button>';
-    d.querySelector('.go').addEventListener('click', function () {
-      Notification.requestPermission().then(function (p) {
-        if (p === 'granted') { d.remove(); }
-        else if (p === 'denied') { d.querySelector('span').textContent = 'Avisos bloqueados pelo navegador. Libere no cadeado ao lado do endereço do site.'; }
-      });
+    if (document.getElementById('crx-chat-controls')) return;
+    var open = document.createElement('button');
+    open.id = 'crx-chat-controls'; open.type = 'button';
+    open.textContent = 'Avisos do Windows';
+    open.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:2147482000;background:#0f2c3f;color:white;border:0;border-radius:9px;padding:9px 12px;font:600 12px system-ui;cursor:pointer';
+    document.body.appendChild(open);
+    var panel = null;
+    open.addEventListener('click', function () {
+      if (panel) { panel.remove(); panel=null; return; }
+      panel = document.createElement('div'); panel.className='crx-native-panel'; panel.id='crx-chat-nudge';
+      panel.style.cssText='position:fixed;right:12px;bottom:56px;z-index:2147483001;background:white;color:#0f2c3f;border:1px solid #dbe4ef;border-radius:12px;padding:16px;box-shadow:0 10px 35px #0003;width:min(360px,calc(100vw - 24px));box-sizing:border-box;font:13px/1.5 system-ui';
+      panel.innerHTML='<strong>Avisos do Windows · v170</strong><p>Receba avisos com o sistema aberto ou minimizado. O navegador precisa continuar aberto.</p><p id="crx-native-status" role="status"></p><button type="button" class="crx-native-enable">Ativar avisos</button> <button type="button" class="crx-native-test">Testar aviso do Windows</button><p>Não apareceu? No Windows, ative as notificações e os banners do Chrome/Edge e desative Não perturbe.</p><button type="button" class="crx-native-close">Fechar</button>';
+      panel.querySelector('#crx-native-status').textContent=nativeStatus;
+      Array.prototype.forEach.call(panel.querySelectorAll('button'),function (button) {button.style.cssText='border:0;border-radius:7px;background:#1a5276;color:white;padding:8px;margin:3px 0;cursor:pointer;font:600 12px system-ui';});
+      function activate(test) {
+        if (!('Notification' in window)) {statusNative('Notificações indisponíveis neste navegador.');return;}
+        if (!window.isSecureContext) {statusNative('Abra o sistema no endereço seguro HTTPS.');return;}
+        function send(p) {
+          if (p !== 'granted') {statusNative(p==='denied'?'Bloqueado. Permita Notificações nas configurações do site.':'Permissão ainda não concedida. Clique novamente e escolha Permitir.');return;}
+          notifyNative({id:'test-'+Date.now(),nome:'Teste de aviso',public:true,texto:test?'Se você está vendo este aviso, a entrega neste computador funcionou.':'Avisos ativados neste navegador.'});
+        }
+        if (Notification.permission==='default') Notification.requestPermission().then(send).catch(function(e){statusNative('Não foi possível pedir permissão: '+e.message);});
+        else send(Notification.permission);
+      }
+      panel.querySelector('.crx-native-enable').addEventListener('click',function(){activate(false);});
+      panel.querySelector('.crx-native-test').addEventListener('click',function(){activate(true);});
+      panel.querySelector('.crx-native-close').addEventListener('click',function(){panel.remove();panel=null;});
+      document.body.appendChild(panel);
     });
-    d.querySelector('.no').addEventListener('click', function () {
-      try { localStorage.setItem('crx-chat-nudge-off', String(Date.now())); } catch (e) {}
-      d.remove();
-    });
-    document.body.appendChild(d);
-    setTimeout(function () { if (d.parentNode) d.remove(); }, 25000);
   }
 
   function loop() {
@@ -3067,7 +3086,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
       if (!wsOpen && session()) wsConnect();
     }, 20000);
     document.addEventListener('click', function once() {
-      if (Notification.permission === 'default') nudge();
+      if ('Notification' in window && Notification.permission === 'default') nudge();
       document.removeEventListener('click', once);
     }, { once: true });
   }
@@ -3075,6 +3094,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
+
 
 </script>
 </body>
