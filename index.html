@@ -11,43 +11,35 @@
     <link rel="apple-touch-icon" sizes="192x192" href="/cras-icon-192-v150.png">
     <title>CRAS Delfinópolis</title>
     <style>
-html,body{margin:0}#app-splash{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#eff8ff,#fff8e8);display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;color:#123d56}
-#app-splash .cras-boot-card{width:min(420px,calc(100vw - 40px));text-align:center;padding:28px;box-sizing:border-box;background:#fff;border-radius:20px;border:1px solid #dde8ef;box-shadow:0 12px 40px #173d5610}
-#app-splash img{display:block;width:min(240px,100%);height:120px;object-fit:contain;margin:0 auto 18px}
-#app-splash h1{font-size:20px;margin:8px 0}#app-splash p{font-size:14px;line-height:1.5}
-.splash-track{height:7px;background:#e3edf3;border-radius:8px;overflow:hidden}.splash-fill{height:100%;width:0;background:#1a5276;transition:width .12s}
-#splash-pct{font-size:12px;color:#5b7381;display:block;margin-top:6px}#splash-error-msg{color:#a52727}#splash-retry{background:#1a5276;color:white;border:0;border-radius:8px;padding:10px 16px;cursor:pointer}
+html,body{margin:0}#app-splash{position:fixed;inset:0;z-index:99999;background:#f7f7f7;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;color:#13446a;padding:20px;box-sizing:border-box}
+#app-splash .cras-boot-card{width:min(680px,100%);text-align:center;box-sizing:border-box;background:transparent;border-radius:0;border:0;box-shadow:none;overflow:visible}
+#app-splash video{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:contain;background:transparent;mask-image:linear-gradient(to right,transparent,#000 12px,#000 calc(100% - 12px),transparent),linear-gradient(to bottom,transparent,#000 8px,#000 calc(100% - 8px),transparent);mask-composite:intersect}
+#app-splash .boot-state{padding:0 32px 24px}#app-splash p{font-size:14px;line-height:1.5;margin:14px 0}.boot-caption{display:block;font-size:11px;color:#748495;margin-top:12px}
+.splash-track{height:6px;background:#e3edf3;border-radius:8px;overflow:hidden}.splash-fill{height:100%;width:0;background:#178339;transition:width .12s}
+#splash-pct{font-size:12px;color:#5b7381;display:block;margin-top:6px}#splash-error-msg{color:#a52727}#splash-retry{background:#13446a;color:white;border:0;border-radius:8px;padding:10px 16px;cursor:pointer}
 #root{opacity:1;transform:none;animation:none}#root:not(.app-ready){visibility:hidden}
+@media(max-height:620px){#app-splash .cras-boot-card{width:min(510px,100%)}#app-splash video{max-height:60vh}#app-splash .boot-state{padding-bottom:12px}}
+@media(prefers-reduced-motion:reduce){.splash-fill{transition:none}}
 </style>
-    <script type="module" crossorigin src="/assets/index.js?v=v171"></script>
+    <script type="module" crossorigin src="/assets/index.js?v=v175"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase.js">
-    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v171">
+    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v175">
   </head>
   <body>
-    <!-- Abertura única v171: sem vídeo, poster antigo ou espera artificial. -->
+    <!-- Abertura única v175: animação oficial adaptada, sem espera mínima. -->
     <div id="app-splash" role="status" aria-live="polite">
       <div class="cras-boot-card">
-        <img src="/logo-cras-oficial.png" alt="CRAS Delfinópolis" width="240" height="120">
-        <h1>CRAS Delfinópolis</h1><p id="splash-status">Iniciando o sistema…</p>
-        <div class="splash-track"><div class="splash-fill" id="splash-fill"></div></div><span id="splash-pct">0%</span>
-        <div id="splash-error" hidden><p id="splash-error-msg"></p><button id="splash-retry" type="button">Tentar novamente</button></div>
+        <video id="cras-boot-video" autoplay muted playsinline preload="metadata" poster="/abertura-cras-v175.jpg" aria-label="Abertura oficial do CRAS Delfinópolis"><source src="/abertura-cras-v175.mp4" type="video/mp4"></video>
+        <div class="boot-state"><p id="splash-status">Iniciando o sistema…</p>
+          <div class="splash-track"><div class="splash-fill" id="splash-fill"></div></div><span id="splash-pct">0%</span>
+          <div id="splash-error" hidden><p id="splash-error-msg"></p><button id="splash-retry" type="button">Tentar novamente</button></div>
+          <small class="boot-caption">Acesso liberado assim que o sistema estiver pronto.</small>
+        </div>
       </div>
     </div>
     <div id="root"></div>
-    <script>
-    (function(){
-      var finished=false; var watchdog;
-      function el(id){return document.getElementById(id);}
-      window.__crasSplash={
-        set:function(p,t){if(finished)return;if(el('splash-fill'))el('splash-fill').style.width=Math.max(0,Math.min(100,p))+'%';if(el('splash-pct'))el('splash-pct').textContent=Math.round(p)+'%';if(t&&el('splash-status'))el('splash-status').textContent=t;if(el('splash-error'))el('splash-error').hidden=true;},
-        indeterminate:function(t){if(el('splash-status'))el('splash-status').textContent=t||'Conectando…';},
-        error:function(msg,retry){if(finished)return;if(el('splash-error'))el('splash-error').hidden=false;if(el('splash-error-msg'))el('splash-error-msg').textContent=msg;if(el('splash-retry'))el('splash-retry').onclick=function(){window.__crasSplash.set(5,'Tentando novamente…');if(typeof retry==='function')retry();else window.location.reload();};},
-        done:function(){finished=true;clearTimeout(watchdog);if(el('root'))el('root').classList.add('app-ready');if(el('app-splash'))el('app-splash').remove();window.dispatchEvent(new Event('cras-app-ready'));}
-      };
-      watchdog=setTimeout(function(){if(!finished)window.__crasSplash.error('O carregamento está demorando. Confira sua conexão e tente novamente.',function(){window.location.reload();});},25000);
-    })();
-    </script>
+    <script src="/assets/boot-v175.js"></script>
 
     <!-- ===== CALENDÁRIO DO CRAS (melhoria v148) =====
          Não troca nada do sistema: só melhora os campos de data que já existem.
@@ -1076,7 +1068,7 @@ html,body{margin:0}#app-splash{position:fixed;inset:0;z-index:99999;background:l
     modal.querySelector('#crx-savelimit').addEventListener('click', saveLimit);
     var ver = document.createElement('span');
     ver.className = 'crx-ver';
-    ver.textContent = 'Encaixe v171';
+    ver.textContent = 'Encaixe v175';
     ver.style.cssText = 'font-size:10px;color:#94a3b8;font-weight:700;margin-right:8px;letter-spacing:.3px';
     modal.querySelector('#crx-admin').appendChild(ver);
     applyProfile();
@@ -1646,7 +1638,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
 
     </script>
     <script>
-/* CRAS Delfinópolis — Regra do dia exclusivo de Benefícios BPC (v171)
+/* CRAS Delfinópolis — Regra do dia exclusivo de Benefícios BPC (v175)
    - Ao agendar um atendimento do tipo BPC, o dia passa a ser exclusivo desse serviço
    - Nos demais tipos, o dia fica bloqueado (a exceção é o Encaixe)
    - Aba "Benefícios BPC" em Configurações: liga/desliga a regra, escolhe o tipo e o limite por dia
@@ -1658,7 +1650,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
 
   var SB_URL = 'https://tizruuquhhpmykkjsmpn.supabase.co';
   var SB_KEY = 'sb_publishable_l-COxHSUAoiOf7PMXAb3SQ_ZWZk1v1w';
-  var VERSION = 'v171';
+  var VERSION = 'v175';
 
   var cfg = { enabled: true, limit: 4, tipoId: '' };
   var tipos = null, tiposAt = 0;
@@ -2173,7 +2165,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
 })();
 
 </script>
-  <!-- CRAS Delfinopolis - Avisos de mensagens do Chat (v171) -->
+  <!-- CRAS Delfinopolis - Avisos de mensagens do Chat (v175) -->
 <script>
 
 (function () {
@@ -2575,7 +2567,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
       if (panel) { panel.remove(); panel=null; return; }
       panel = document.createElement('div'); panel.className='crx-native-panel'; panel.id='crx-chat-nudge';
       panel.style.cssText='position:fixed;right:12px;bottom:56px;z-index:2147483001;background:white;color:#0f2c3f;border:1px solid #dbe4ef;border-radius:12px;padding:16px;box-shadow:0 10px 35px #0003;width:min(360px,calc(100vw - 24px));box-sizing:border-box;font:13px/1.5 system-ui';
-      panel.innerHTML='<strong>Avisos do Windows · v171</strong><p>Receba avisos com o sistema aberto ou minimizado. O navegador precisa continuar aberto.</p><p id="crx-native-status" role="status"></p><button type="button" class="crx-native-enable">Ativar avisos</button> <button type="button" class="crx-native-test">Testar aviso do Windows</button><p>Não apareceu? No Windows, ative as notificações e os banners do Chrome/Edge e desative Não perturbe.</p><button type="button" class="crx-native-close">Fechar</button>';
+      panel.innerHTML='<strong>Avisos do Windows · v175</strong><p>Receba avisos com o sistema aberto ou minimizado. O navegador precisa continuar aberto.</p><p id="crx-native-status" role="status"></p><button type="button" class="crx-native-enable">Ativar avisos</button> <button type="button" class="crx-native-test">Testar aviso do Windows</button><p>Não apareceu? No Windows, ative as notificações e os banners do Chrome/Edge e desative Não perturbe.</p><button type="button" class="crx-native-close">Fechar</button>';
       panel.querySelector('#crx-native-status').textContent=nativeStatus;
       Array.prototype.forEach.call(panel.querySelectorAll('button'),function (button) {button.style.cssText='border:0;border-radius:7px;background:#1a5276;color:white;padding:8px;margin:3px 0;cursor:pointer;font:600 12px system-ui';});
       function activate(test) {
