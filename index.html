@@ -11,515 +11,42 @@
     <link rel="apple-touch-icon" sizes="192x192" href="/cras-icon-192-v150.png">
     <title>CRAS Delfinópolis</title>
     <style>
-      html, body { margin: 0; padding: 0; }
-
-      /* ===== Tela de abertura (carregamento real) ===== */
-      #app-splash {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        display: block;
-        box-sizing: border-box;
-        /* Fundo claro IGUAL a borda do proprio video (~#F4F5F8), para que a
-           margem acima/abaixo/dos lados do video (quando a tela nao e 16:9) se
-           funda com o video: sem faixa azul e SEM cortar a logo de Delfinopolis. */
-        background: #f4f5f8;
-        overflow: hidden;
-        transition: opacity .7s ease, visibility .7s ease;
-        will-change: opacity;
-      }
-      #app-splash.hide { opacity: 0; visibility: hidden; }
-
-      /* ---- VÍDEO EM TELA CHEIA: ocupa 100% da largura e 100% da altura da
-           tela, adaptando-se à resolução do monitor. object-fit: cover preenche
-           tudo (sem faixas azuis / sem bordas), mantendo a proporção do vídeo
-           (não distorce). Quando a tela não é 16:9, o cover recorta um pouco as
-           sobras e mantém a ilustração centralizada. ---- */
-      .splash-stage {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1;
-      }
-      .splash-video {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        -o-object-fit: cover;
-           object-fit: cover;             /* preenche TODA a tela: sem faixas nas laterais */
-        -o-object-position: center center;
-           object-position: center center; /* ilustração centralizada */
-        /* Em telas muito largas (ex.: monitor 16:9 achatado) o recorte do cover
-           viria da lateral direita, onde fica a logo da Prefeitura. Este recorte
-           parcial apenas a desloca ~2,3% para a esquerda, mantendo-a inteira. */
-        -webkit-clip-path: inset(0 2.3% 0 0);
-           clip-path: inset(0 2.3% 0 0);
-        display: block;
-        background: transparent;
-        border: 0;
-        pointer-events: none;
-      }
-      /* ---- Preenchimento DOURADO sobre a barra que JÁ EXISTE dentro do vídeo.
-           A posição (left/top/width/height) é calculada por JS para acompanhar
-           o recorte do cover em qualquer resolução, mantendo o dourado EXATO
-           sobre o trilho do vídeo. NÃO há segunda barra. ---- */
-      .bar-overlay {
-        position: absolute;
-        left: 34.6%;
-        top: 78.3%;
-        width: 30.8%;
-        height: 2.8%;
-        border-radius: 999px;
-        overflow: hidden;
-        z-index: 2;
-        pointer-events: none;
-      }
-      .bar-fill {
-        position: absolute;
-        left: 0; top: 0; bottom: 0;
-        width: 0%;
-        border-radius: 999px;
-        background: linear-gradient(90deg, #f6ab00, #ffcb3a);
-        box-shadow: 0 0 6px rgba(246,171,0,.45);
-        transition: width .55s cubic-bezier(.22,.61,.36,1);
-      }
-      .bar-fill::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.5) 50%, rgba(255,255,255,0) 100%);
-        transform: translateX(-100%);
-        animation: barShine 1.8s ease-in-out infinite;
-      }
-      .bar-fill.indeterminate {
-        width: 38% !important;
-        transition: none;
-        animation: barIndeterminate 1.3s ease-in-out infinite;
-      }
-      .bar-fill.indeterminate::after { animation: none; }
-
-      /* Barra de progresso FIXA NA PARTE DE BAIXO, sobre o vídeo (sem borda azul
-         em volta). Um leve escurecimento só atrás da barra garante a leitura. */
-      .splash-ui {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 3;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 14px;
-        width: 100%;
-        padding: 40px 24px calc(env(safe-area-inset-bottom, 0px) + 30px);
-        box-sizing: border-box;
-        background: linear-gradient(180deg, rgba(3,40,90,0) 0%, rgba(3,40,90,.30) 55%, rgba(3,40,90,.55) 100%);
-      }
-
-      /* Conteúdo do sistema surge suavemente e de forma GARANTIDA (sem depender
-         de callback de JS) — assim o login nunca fica invisível/travado. */
-      #root { animation: appContentIn .6s cubic-bezier(.22,.61,.36,1) .05s both; }
-      @keyframes appContentIn {
-        from { opacity: 0; transform: translateY(8px); }
-        to   { opacity: 1; transform: none; }
-      }
-
-
-      /* ---- Barra de progresso REAL ---- */
-      .splash-progress {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 8px;
-        opacity: 0;
-        animation: fadeUp .6s ease .35s forwards;
-      }
-      .splash-track {
-        position: relative;
-        flex: 1;
-        height: 8px;
-        border-radius: 999px;
-        background: rgba(255,255,255,.35);
-        overflow: hidden;
-        box-shadow: 0 1px 4px rgba(0,0,0,.25);
-      }
-      .splash-fill {
-        position: absolute;
-        left: 0; top: 0; bottom: 0;
-        width: 0%;
-        border-radius: 999px;
-        background: linear-gradient(90deg, #ffd21e, #f6ab00);
-        transition: width .45s cubic-bezier(.22,.61,.36,1);
-      }
-      /* Brilho que desliza sobre a parte preenchida da barra */
-      .splash-fill::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%);
-        transform: translateX(-100%);
-        animation: barShine 1.8s ease-in-out infinite;
-      }
-      .splash-pct {
-        text-align: right;
-        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-        font-size: 15px;
-        font-weight: 700;
-        color: #ffd21e;
-        font-variant-numeric: tabular-nums;
-        text-shadow: 0 1px 3px rgba(0,0,0,.35);
-      }
-      /* Modo indeterminado: barra desliza sem porcentagem (quando não dá para
-         calcular um valor real confiável). */
-      .splash-progress.indeterminate .splash-fill {
-        width: 38% !important;
-        transition: none;
-        animation: barIndeterminate 1.3s ease-in-out infinite;
-      }
-      .splash-progress.indeterminate .splash-fill::after { animation: none; }
-
-      .splash-status {
-        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-        font-size: 14px;
-        font-weight: 600;
-        color: rgba(255,255,255,.95);
-        text-align: center;
-        opacity: 1;
-        text-shadow: 0 1px 3px rgba(0,0,0,.35);
-      }
-
-      /* ---- Pontos de carregamento ---- */
-      .splash-dots {
-        display: flex;
-        gap: 9px;
-        opacity: 0;
-        animation: fadeUp .6s ease .55s forwards;
-      }
-      .splash-dots i {
-        width: 9px; height: 9px;
-        border-radius: 50%;
-        background: rgba(255,255,255,.45);
-        display: inline-block;
-        animation: dotPulse 1.3s ease-in-out infinite;
-      }
-      .splash-dots i:nth-child(1) { animation-delay: 0s; }
-      .splash-dots i:nth-child(2) { animation-delay: .12s; }
-      .splash-dots i:nth-child(3) { animation-delay: .24s; }
-      .splash-dots i:nth-child(4) { animation-delay: .36s; }
-      .splash-dots i:nth-child(5) { animation-delay: .48s; }
-      .splash-dots i:nth-child(6) { animation-delay: .60s; }
-
-      /* ---- Bloco de erro (falha de conexão) ---- */
-      .splash-error {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        max-width: min(420px, 86vw);
-        text-align: center;
-      }
-      .splash-error-msg {
-        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-        font-size: 14px;
-        color: #ffe3e3;
-        line-height: 1.5;
-      }
-      .splash-retry {
-        -webkit-appearance: none;
-           -moz-appearance: none;
-                appearance: none;
-        border: none;
-        cursor: pointer;
-        padding: 11px 22px;
-        border-radius: 999px;
-        background: #ffffff;
-        color: #0d6fd0;
-        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-        font-size: 14px;
-        font-weight: 700;
-        box-shadow: 0 6px 16px rgba(0,0,0,.18);
-        transition: background .2s ease, transform .1s ease;
-      }
-      .splash-retry:hover { background: #eaf3ff; }
-      .splash-retry:active { transform: scale(.97); }
-
-      @keyframes fadeUp {
-        from { opacity: 0; transform: translateY(6px); }
-        to   { opacity: 1; transform: none; }
-      }
-      @keyframes barShine {
-        0%   { transform: translateX(-100%); }
-        60%,100% { transform: translateX(100%); }
-      }
-      @keyframes barIndeterminate {
-        0%   { left: -40%; }
-        100% { left: 100%; }
-      }
-      @keyframes dotPulse {
-        0%,100% { background: rgba(255,255,255,.45); transform: scale(1); }
-        40%     { background: #ffd21e; transform: scale(1.25); }
-      }
-
-
-      /* Barra independente do vídeo: progresso alimentado pelas etapas reais do boot. */
-      .splash-ui { gap: 10px; padding: 22px 24px calc(env(safe-area-inset-bottom, 0px) + 24px); }
-      .splash-progress { width: min(760px, 88vw); display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px 14px; }
-      .splash-status { grid-column: 1 / -1; font-size: 14px; }
-      .splash-track { grid-column: 1; grid-row: 2; width: 100%; height: 10px; }
-      .splash-pct { grid-column: 2; grid-row: 2; min-width: 48px; }
-      .splash-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; }
-      @media (max-width: 600px) {
-        .splash-ui { padding-left: 16px; padding-right: 16px; }
-        .splash-progress { width: 94vw; }
-        .splash-status { font-size: 12px; }
-      }
-
-      /* ---- Acessibilidade: respeita prefers-reduced-motion ---- */
-      @media (prefers-reduced-motion: reduce) {
-        #root { animation: none; opacity: 1; transform: none; }
-        #app-splash { transition: opacity .2s ease, visibility .2s ease; }
-        .splash-logo,
-        .splash-logo-wrap::before,
-        .splash-progress,
-        .splash-status,
-        .splash-dots,
-        .splash-dots i,
-        .splash-fill::after { animation: none !important; opacity: 1; }
-        .splash-logo { transform: none; }
-        .splash-fill { transition: none; }
-        .bar-fill { transition: none; animation: none !important; }
-        .bar-fill::after { animation: none !important; }
-        .splash-progress.indeterminate .splash-fill { animation: none; }
-      }
-    </style>
-    <script type="module" crossorigin src="/assets/index.js?v=v170"></script>
+html,body{margin:0}#app-splash{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#eff8ff,#fff8e8);display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;color:#123d56}
+#app-splash .cras-boot-card{width:min(420px,calc(100vw - 40px));text-align:center;padding:28px;box-sizing:border-box;background:#fff;border-radius:20px;border:1px solid #dde8ef;box-shadow:0 12px 40px #173d5610}
+#app-splash img{display:block;width:min(240px,100%);height:120px;object-fit:contain;margin:0 auto 18px}
+#app-splash h1{font-size:20px;margin:8px 0}#app-splash p{font-size:14px;line-height:1.5}
+.splash-track{height:7px;background:#e3edf3;border-radius:8px;overflow:hidden}.splash-fill{height:100%;width:0;background:#1a5276;transition:width .12s}
+#splash-pct{font-size:12px;color:#5b7381;display:block;margin-top:6px}#splash-error-msg{color:#a52727}#splash-retry{background:#1a5276;color:white;border:0;border-radius:8px;padding:10px 16px;cursor:pointer}
+#root{opacity:1;transform:none;animation:none}#root:not(.app-ready){visibility:hidden}
+</style>
+    <script type="module" crossorigin src="/assets/index.js?v=v171"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor.js">
-    <link rel="modulepreload" crossorigin href="/assets/charts.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase.js">
-    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v170">
+    <link rel="stylesheet" crossorigin href="/assets/index.css?v=v171">
   </head>
   <body>
-    <!-- Tela de abertura: logotipo original preservado + barra de progresso REAL.
-         A barra é preenchida pelo boot do sistema (src/lib/boot.ts) conforme as
-         tarefas verdadeiras de inicialização terminam. -->
-    <div id="app-splash" role="status" aria-live="polite" aria-label="Carregando o sistema">
-      <div class="splash-stage">
-        <video
-          class="splash-video"
-          id="splash-video"
-          autoplay
-          muted
-          loop
-          playsinline
-          preload="auto"
-          poster="/splash-poster.jpg?v=v148"
-        >
-          <source src="/init-video-cras-novo.mp4?v=v148" type="video/mp4" />
-        </video>
-        
-        
-      </div>
-
-      <div class="splash-ui">
-<div class="splash-progress" id="splash-progress">
-        <span class="splash-status" id="splash-status">Iniciando…</span>
-        <div class="splash-track"><div class="splash-fill" id="splash-fill"></div></div>
-        <span class="splash-pct" id="splash-pct">0%</span>
-      </div>
-
-      <div class="splash-error" id="splash-error" hidden>
-        <div class="splash-error-msg" id="splash-error-msg"></div>
-        <button type="button" class="splash-retry" id="splash-retry">Tentar novamente</button>
-      </div>
+    <!-- Abertura única v171: sem vídeo, poster antigo ou espera artificial. -->
+    <div id="app-splash" role="status" aria-live="polite">
+      <div class="cras-boot-card">
+        <img src="/logo-cras-oficial.png" alt="CRAS Delfinópolis" width="240" height="120">
+        <h1>CRAS Delfinópolis</h1><p id="splash-status">Iniciando o sistema…</p>
+        <div class="splash-track"><div class="splash-fill" id="splash-fill"></div></div><span id="splash-pct">0%</span>
+        <div id="splash-error" hidden><p id="splash-error-msg"></p><button id="splash-retry" type="button">Tentar novamente</button></div>
       </div>
     </div>
-
     <div id="root"></div>
-
     <script>
-      /* API da tela de abertura usada pelo boot real (src/lib/boot.ts).
-         Mantém a barra ligada às tarefas verdadeiras — nada de porcentagem falsa. */
-      (function () {
-        var startedAt = Date.now();
-        function byId(id){ return document.getElementById(id); }
-
-        /* ===== Alinhamento da barra dourada sobre o trilho do vídeo =====
-           Com object-fit: cover o vídeo é ampliado e recortado para preencher a
-           tela. Para o dourado cair EXATAMENTE sobre a barra já desenhada no
-           vídeo, recalculamos a posição da barra (em pixels) a partir do recorte
-           real, em qualquer resolução. */
-        var VID_W = 3840, VID_H = 2160; /* resolução do vídeo (16:9) */
-        /* Frações do trilho dentro do quadro do vídeo (0..1). */
-        var BAR = { x: 0.346, y: 0.783, w: 0.308, h: 0.028 };
-        /* Reposicionamento da barra sobre o trilho do video. Fica protegido
-           para NUNCA lancar erro: se algo faltar, apenas nao faz nada. Assim a
-           tela de abertura sempre termina de inicializar e some quando o
-           sistema fica pronto (antes, uma funcao faltante travava tudo aqui e
-           o video ficava preso para sempre). */
-        function positionSplashBar(){
-          try {
-            var stage = document.querySelector('.splash-stage');
-            var prog  = byId('splash-progress');
-            if (!stage || !prog) return;
-            var W = stage.clientWidth, H = stage.clientHeight;
-            if (!W || !H) return;
-            void VID_W; void VID_H; void BAR; /* mantidos p/ referencia futura */
-          } catch (e) { /* nunca bloqueia a inicializacao */ }
-        }
-        window.addEventListener('orientationchange', positionSplashBar);
-        positionSplashBar();
-        window.setTimeout(positionSplashBar, 120);
-        window.setTimeout(positionSplashBar, 600);
-
-        /* ===== Sincronização do vídeo de abertura com o carregamento REAL =====
-           Quando a inicialização verdadeira do sistema termina (o boot chama
-           done()), avançamos o vídeo para o segundo de sincronização (8s),
-           desde que ele ainda esteja ANTES desse ponto — nunca retrocedemos.
-           O vídeo NUNCA é usado como prova de que o sistema está pronto: quem
-           dá esse sinal é sempre o boot real. */
-        var SYNC_SECONDS = 8;
-        var systemReady = false;
-        var videoSynced = false;
-        function syncVideoToReady() {
-          if (videoSynced || !systemReady) return;
-          var v = byId('splash-video');
-          if (!v) { videoSynced = true; return; }
-          /* Metadados ainda não disponíveis: espera o loadedmetadata e repete. */
-          if (isNaN(v.duration) || v.duration <= 0 || v.readyState < 1) {
-            v.addEventListener('loadedmetadata', syncVideoToReady, { once: true });
-            return;
-          }
-          videoSynced = true; /* trava: o salto acontece uma única vez */
-          try {
-            if (v.currentTime < SYNC_SECONDS && v.duration > SYNC_SECONDS) {
-              var onSeeked = function () {
-                v.removeEventListener('seeked', onSeeked);
-                try { v.play(); } catch (e) {}
-              };
-              v.addEventListener('seeked', onSeeked);
-              v.currentTime = SYNC_SECONDS; /* dispara seeking → seeked */
-            } else {
-              /* Já passou do segundo 8: não retrocede, apenas segue tocando. */
-              try { v.play(); } catch (e) {}
-            }
-          } catch (e) { /* ignora falhas de seek */ }
-        }
-        function els(){
-          return {
-            splash: byId('app-splash'),
-            prog:   byId('splash-progress'),
-            fill:   byId('splash-fill'),
-            barfill:byId('splash-fill'),
-            pct:    byId('splash-pct'),
-            status: byId('splash-status'),
-            errBox: byId('splash-error'),
-            errMsg: byId('splash-error-msg'),
-            retry:  byId('splash-retry'),
-            root:   byId('root')
-          };
-        }
-        var api = {
-          set: function (p, t) {
-            var e = els();
-            if (e.prog) e.prog.classList.remove('indeterminate');
-            p = Math.max(0, Math.min(100, p));
-            if (e.fill) e.fill.style.width = p + '%';
-            if (e.barfill) { e.barfill.classList.remove('indeterminate'); e.barfill.style.width = p + '%'; }
-            if (e.pct) { e.pct.style.display = ''; e.pct.textContent = Math.round(p) + '%'; }
-            if (t && e.status) e.status.textContent = t;
-            if (e.errBox) e.errBox.hidden = true;
-          },
-          indeterminate: function (t) {
-            var e = els();
-            if (e.prog) e.prog.classList.add('indeterminate');
-            if (e.barfill) e.barfill.classList.add('indeterminate');
-            if (e.pct) e.pct.style.display = 'none';
-            if (t && e.status) e.status.textContent = t;
-            if (e.errBox) e.errBox.hidden = true;
-          },
-          error: function (msg, onRetry) {
-            var e = els();
-            if (e.prog) e.prog.classList.remove('indeterminate');
-            if (e.errMsg) e.errMsg.textContent = msg;
-            if (e.errBox) e.errBox.hidden = false;
-            if (e.status) e.status.textContent = 'Falha na conexão';
-            if (e.retry) {
-              e.retry.onclick = function () {
-                api.set(8, 'Tentando novamente…');
-                if (typeof onRetry === 'function') onRetry();
-              };
-            }
-          },
-          done: function () {
-            /* Sinal REAL de "sistema pronto": sincroniza o vídeo (salto p/ 8s). */
-            systemReady = true;
-            syncVideoToReady();
-            var e = els();
-            if (e.root) e.root.classList.add('app-ready');
-            if (!e.splash) return;
-            /* Tempo mínimo de exibição: garante que o logotipo da abertura
-               SEMPRE apareça, mesmo quando o sistema carrega muito rápido
-               (antes a tela piscava e o logo não dava tempo de surgir). */
-            var MIN_MS = 1500;
-            var elapsed = Date.now() - startedAt;
-            var wait = Math.max(280, MIN_MS - elapsed);
-            window.setTimeout(function () {
-              e.splash.classList.add('hide');
-              window.setTimeout(function () { if (e.splash) e.splash.remove(); }, 700);
-            }, wait);
-          }
-        };
-        window.__crasSplash = api;
-
-        /* ===== Auto-cura de cache (versão velha presa) =====
-           Se em ~6s o pacote principal do app NÃO deu sinal de vida
-           (window.__appAlive), muito provavelmente um service worker antigo
-           está servindo arquivos velhos/quebrados. Então limpamos TUDO
-           (service workers + caches) e recarregamos UMA única vez. */
-        function limparTudoERecarregar(cb) {
-          var finish = function () { (cb || function(){ window.location.reload(); })(); };
-          try {
-            var tasks = [];
-            if ('serviceWorker' in navigator) {
-              tasks.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
-                return Promise.all(regs.map(function (r) { return r.unregister(); }));
-              }).catch(function(){}));
-            }
-            if (window.caches && caches.keys) {
-              tasks.push(caches.keys().then(function (ks) {
-                return Promise.all(ks.map(function (k) { return caches.delete(k); }));
-              }).catch(function(){}));
-            }
-            Promise.all(tasks).then(finish, finish);
-          } catch (e) { finish(); }
-        }
-
-        window.setTimeout(function () {
-          if (window.__appAlive) return;              // app carregou normal
-          var KEY = 'cras_selfheal';
-          if (sessionStorage.getItem(KEY)) return;    // já tentou nesta sessão
-          try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
-          var e2 = els();
-          if (e2.status) e2.status.textContent = 'Atualizando o aplicativo…';
-          limparTudoERecarregar();
-        }, 6000);
-
-        /* Rede de segurança: se em 16s a abertura não terminou nem mostrou erro,
-           não deixa a tela presa — oferece recarregar limpando o cache. */
-        window.setTimeout(function () {
-          var e = els();
-          if (e.splash && !e.splash.classList.contains('hide') && e.errBox && e.errBox.hidden) {
-            api.error('A inicialização está demorando mais que o normal. Verifique sua internet.', function () {
-              var e3 = els();
-              if (e3.status) e3.status.textContent = 'Atualizando o aplicativo…';
-              limparTudoERecarregar();
-            });
-          }
-        }, 16000);
-      })();
+    (function(){
+      var finished=false; var watchdog;
+      function el(id){return document.getElementById(id);}
+      window.__crasSplash={
+        set:function(p,t){if(finished)return;if(el('splash-fill'))el('splash-fill').style.width=Math.max(0,Math.min(100,p))+'%';if(el('splash-pct'))el('splash-pct').textContent=Math.round(p)+'%';if(t&&el('splash-status'))el('splash-status').textContent=t;if(el('splash-error'))el('splash-error').hidden=true;},
+        indeterminate:function(t){if(el('splash-status'))el('splash-status').textContent=t||'Conectando…';},
+        error:function(msg,retry){if(finished)return;if(el('splash-error'))el('splash-error').hidden=false;if(el('splash-error-msg'))el('splash-error-msg').textContent=msg;if(el('splash-retry'))el('splash-retry').onclick=function(){window.__crasSplash.set(5,'Tentando novamente…');if(typeof retry==='function')retry();else window.location.reload();};},
+        done:function(){finished=true;clearTimeout(watchdog);if(el('root'))el('root').classList.add('app-ready');if(el('app-splash'))el('app-splash').remove();window.dispatchEvent(new Event('cras-app-ready'));}
+      };
+      watchdog=setTimeout(function(){if(!finished)window.__crasSplash.error('O carregamento está demorando. Confira sua conexão e tente novamente.',function(){window.location.reload();});},25000);
+    })();
     </script>
 
     <!-- ===== CALENDÁRIO DO CRAS (melhoria v148) =====
@@ -1013,7 +540,6 @@
     </script>
     <!-- O pacote principal do app carrega DEPOIS que a API da tela de abertura
          (window.__crasSplash) já está definida acima, evitando a tela presa em 0%. -->
-    <script src="/assets/supabase.js?v=v170" type="module"></script>
     <script>
 /* CRAS Delfinópolis — Encaixe (v164)
    Módulo complementar: NÃO substitui nenhuma tela do sistema.
@@ -1188,8 +714,11 @@
     if (!hbtn) return;
     var inp = slot.querySelector('input');
     if (!inp) return;
-    var h = Math.round(inp.getBoundingClientRect().height);
-    if (h > 24 && h < 80) {
+    var field=inp.closest('.form-group');if(field && field.parentNode===slot)field.style.marginBottom='0';
+    var wrap=inp.closest('.cras-dp-wrap')||inp;
+    var h = Math.round(wrap.getBoundingClientRect().height);
+    if (h > 16 && h < 100) {
+      hbtn.style.minHeight='0';hbtn.style.boxSizing='border-box';
       hbtn.style.height = h + 'px';
       hbtn.style.paddingTop = '0';
       hbtn.style.paddingBottom = '0';
@@ -1323,7 +852,6 @@
     btnTick = setTimeout(function () {
       btnTick = null;
       try { syncButton(); } catch (e) {} try { syncConfig(); } catch (e) {}
-      try { syncConfig(); } catch (e) {}
     }, 180);
   }
 
@@ -1548,7 +1076,7 @@
     modal.querySelector('#crx-savelimit').addEventListener('click', saveLimit);
     var ver = document.createElement('span');
     ver.className = 'crx-ver';
-    ver.textContent = 'Encaixe v170';
+    ver.textContent = 'Encaixe v171';
     ver.style.cssText = 'font-size:10px;color:#94a3b8;font-weight:700;margin-right:8px;letter-spacing:.3px';
     modal.querySelector('#crx-admin').appendChild(ver);
     applyProfile();
@@ -2091,9 +1619,12 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
     btn._refresh = refresh;
     refresh();
   }
+  var avatarScanTimer=null, avatarProfilePending=false;
+  function scheduleAvatarScan(){if(avatarScanTimer)return;avatarScanTimer=setTimeout(function(){avatarScanTimer=null;try{scan();}catch(e){}},200);}
   function scan() {
+    if (document.hidden || !findNameButton()) return;
     if (!sb) { sb = findClient(); if (!sb) return; }
-    if (!profile) { readProfile().then(function () { scan(); }).catch(function () {}); return; }
+    if (!profile) { if(avatarProfilePending)return;avatarProfilePending=true;readProfile().then(function(){avatarProfilePending=false;if(profile)scheduleAvatarScan();}).catch(function(){avatarProfilePending=false;}); return; }
     var b = findNameButton();
     if (b && !b.__crxAvDone) decorate(b);
   }
@@ -2102,7 +1633,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
     scan();
     setInterval(function () { try { scan(); } catch (e) {} }, 2500);
     try {
-      new MutationObserver(function () { try { scan(); } catch (e) {} })
+      new MutationObserver(scheduleAvatarScan)
         .observe(document.body || document.documentElement, { childList: true, subtree: true });
     } catch (e) {}
     window.addEventListener('cras-supabase-ready', function () { sb = findClient(); scan(); });
@@ -2115,7 +1646,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
 
     </script>
     <script>
-/* CRAS Delfinópolis — Regra do dia exclusivo de Benefícios BPC (v170)
+/* CRAS Delfinópolis — Regra do dia exclusivo de Benefícios BPC (v171)
    - Ao agendar um atendimento do tipo BPC, o dia passa a ser exclusivo desse serviço
    - Nos demais tipos, o dia fica bloqueado (a exceção é o Encaixe)
    - Aba "Benefícios BPC" em Configurações: liga/desliga a regra, escolhe o tipo e o limite por dia
@@ -2127,7 +1658,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
 
   var SB_URL = 'https://tizruuquhhpmykkjsmpn.supabase.co';
   var SB_KEY = 'sb_publishable_l-COxHSUAoiOf7PMXAb3SQ_ZWZk1v1w';
-  var VERSION = 'v170';
+  var VERSION = 'v171';
 
   var cfg = { enabled: true, limit: 4, tipoId: '' };
   var tipos = null, tiposAt = 0;
@@ -2642,7 +2173,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
 })();
 
 </script>
-  <!-- CRAS Delfinopolis - Avisos de mensagens do Chat (v170) -->
+  <!-- CRAS Delfinopolis - Avisos de mensagens do Chat (v171) -->
 <script>
 
 (function () {
@@ -2654,7 +2185,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
   var WS_BASE = 'wss://tizruuquhhpmykkjsmpn.supabase.co/realtime/v1/websocket';
   var ANON = 'sb_publishable_l-COxHSUAoiOf7PMXAb3SQ_ZWZk1v1w';
   var POLL_OK = 6000;
-  var POLL_LIVE = 6000;
+  var POLL_LIVE = 30000;
 
   var seen = {};
   var shown = {};
@@ -2825,7 +2356,9 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
     var el = document.getElementById('crx-native-status');
     if (el) el.textContent = text;
   }
+  var activeNativeReg=null;
   function nativeRegistration() {
+    if(activeNativeReg && activeNativeReg.active && activeNativeReg.active.state==='activated') return Promise.resolve(activeNativeReg);
     if (!navigator.serviceWorker) return Promise.reject(new Error('Este navegador não oferece notificações persistentes.'));
     return navigator.serviceWorker.register('/sw.js', {updateViaCache:'none'}).then(function (reg) {
       if (reg.active && reg.active.state === 'activated') return reg;
@@ -2847,6 +2380,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
     var title = 'CRAS · ' + (m.nome || 'Nova mensagem');
     var opts = {body:(m.public ? 'Chat Geral: ' : 'Mensagem privada: ') + (m.texto || ''), icon:'/icons/icon-192.png', badge:'/icons/icon-192.png', tag:'cras-chat-' + String(m.id || Date.now()), data:{url:'/chat'}, requireInteraction:true, silent:false};
     return nativeRegistration().then(function (reg) {
+      activeNativeReg=reg;
       return reg.showNotification(title, opts);
     }).then(function () {
       statusNative('O navegador aceitou o aviso. Confira o canto da tela ou a Central de Notificações (Win + N). Se não aparecer, verifique os banners do Chrome/Edge e Não perturbe no Windows.');
@@ -2880,13 +2414,14 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
     list.forEach(function (m, i) { setTimeout(function () { showCard(m); }, i * 160); });
   }
 
+  var senderNames={};
   function names(rows) {
     var ids = {}, list = [], i;
-    for (i = 0; i < rows.length; i++) if (!ids[rows[i].remetente_id]) { ids[rows[i].remetente_id] = 1; list.push(rows[i].remetente_id); }
-    if (!list.length) return Promise.resolve(rows);
+    for (i = 0; i < rows.length; i++) if (!ids[rows[i].remetente_id] && !senderNames[rows[i].remetente_id]) { ids[rows[i].remetente_id] = 1; list.push(rows[i].remetente_id); }
+    if (!list.length) return Promise.resolve(rows.map(function(r){return {id:r.id,texto:r.texto,nome:senderNames[r.remetente_id]||'Nova mensagem',public:r.destinatario_id==null};}));
     var q = 'profiles?select=id,nome&id=in.(' + list.map(function (x) { return '"' + x + '"'; }).join(',') + ')';
     return api(q).then(function (ps) {
-      var map = {};
+      var map = senderNames;
       (ps || []).forEach(function (p) { map[p.id] = p.nome; });
       return rows.map(function (r) {
         return { id: r.id, texto: r.texto, nome: map[r.remetente_id] || 'Nova mensagem', public: r.destinatario_id === null || r.destinatario_id === undefined };
@@ -3002,13 +2537,13 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
       }
     };
     ws.onclose = function () {
-      wsOpen = false;
+      wsOpen = false; joined = false;
       if (beat) clearInterval(beat);
       clearTimeout(timer);
       timer = setTimeout(loop, 2500);
       wsLater();
     };
-    ws.onerror = function () { wsOpen = false; };
+    ws.onerror = function () { wsOpen = false; joined = false; };
   }
 
   function wsLater() {
@@ -3040,7 +2575,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
       if (panel) { panel.remove(); panel=null; return; }
       panel = document.createElement('div'); panel.className='crx-native-panel'; panel.id='crx-chat-nudge';
       panel.style.cssText='position:fixed;right:12px;bottom:56px;z-index:2147483001;background:white;color:#0f2c3f;border:1px solid #dbe4ef;border-radius:12px;padding:16px;box-shadow:0 10px 35px #0003;width:min(360px,calc(100vw - 24px));box-sizing:border-box;font:13px/1.5 system-ui';
-      panel.innerHTML='<strong>Avisos do Windows · v170</strong><p>Receba avisos com o sistema aberto ou minimizado. O navegador precisa continuar aberto.</p><p id="crx-native-status" role="status"></p><button type="button" class="crx-native-enable">Ativar avisos</button> <button type="button" class="crx-native-test">Testar aviso do Windows</button><p>Não apareceu? No Windows, ative as notificações e os banners do Chrome/Edge e desative Não perturbe.</p><button type="button" class="crx-native-close">Fechar</button>';
+      panel.innerHTML='<strong>Avisos do Windows · v171</strong><p>Receba avisos com o sistema aberto ou minimizado. O navegador precisa continuar aberto.</p><p id="crx-native-status" role="status"></p><button type="button" class="crx-native-enable">Ativar avisos</button> <button type="button" class="crx-native-test">Testar aviso do Windows</button><p>Não apareceu? No Windows, ative as notificações e os banners do Chrome/Edge e desative Não perturbe.</p><button type="button" class="crx-native-close">Fechar</button>';
       panel.querySelector('#crx-native-status').textContent=nativeStatus;
       Array.prototype.forEach.call(panel.querySelectorAll('button'),function (button) {button.style.cssText='border:0;border-radius:7px;background:#1a5276;color:white;padding:8px;margin:3px 0;cursor:pointer;font:600 12px system-ui';});
       function activate(test) {
@@ -3066,7 +2601,7 @@ function Pm(a){if(!a)return"U";const e=a.trim().split(/\s+/).filter(Boolean);ret
     tick().catch(function () {}).then(function () {
       busy = false;
       clearTimeout(timer);
-      var wait = fails > 2 ? 30000 : (wsOpen ? POLL_LIVE : POLL_OK);
+      var wait = fails > 2 ? 30000 : (joined ? POLL_LIVE : POLL_OK);
       timer = setTimeout(loop, wait);
     });
   }
